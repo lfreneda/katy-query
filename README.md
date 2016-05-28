@@ -34,4 +34,4 @@ Qerry Binders binds result set from Katy format to javascript objects:
 
 #### credits
 
-named by [@maurogarcia](!http://github.com/maurogarcia)
+named by [@maurogarcia](http://github.com/maurogarcia)
