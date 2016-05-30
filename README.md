@@ -1,7 +1,7 @@
-# katy-qerry
-:microphone: Katy Qerry is a query generator and binder to javascript models 
+# KatyQuery
+:microphone: KatyQuery is a query generator and binder to javascript models 
 
-Qerry Generator generates queries in Katy queries format:
+Generator generates queries in Katy queries format:
 
 ```
   SELECT 
@@ -18,7 +18,7 @@ Qerry Generator generates queries in Katy queries format:
     tasks.id = 15
 ```
 
-Qerry Binders binds result set from Katy format to javascript objects:
+Binders binds result set from Katy queries format to javascript objects:
 
 ```
 {
@@ -31,7 +31,5 @@ Qerry Binders binds result set from Katy format to javascript objects:
   }
 }
 ```
-
-#### credits
 
 named by [@maurogarcia](http://github.com/maurogarcia)
