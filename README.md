@@ -9,11 +9,14 @@ Generator generates queries in Katy queries format:
     tasks.description "this.description",
     tasks.status "this.status",
     employees.id "this.employee.id",
-    employees.name "this.employee.name"
+    employees.name "this.employee.name",
+    tags.id "this.tags[].id",
+    tags.name "this.tags[].name"
   FROM
-    tasks
-  INNER JOIN 
-    employees ON tasks.employeeId = employees.id
+     tasks
+   LEFT JOIN employees ON tasks.employeeId = employees.id
+   LEFT JOIN tasks_tags ON tasks_tags.taskId = tasks.id
+   LEFT JOIN tags ON tasks_tags.tagId = tags.id
   WHERE
     tasks.id = 15
 ```
@@ -28,7 +31,11 @@ Binders binds result set from Katy queries format to javascript objects:
   employee: { 
     id: 2,
     name: 'Luiz Freneda'
-  }
+  },
+  tags: [
+    { id: 3, name: 'katy' },
+    { id: 4, name: 'query' }
+  ]
 }
 ```
 
