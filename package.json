@@ -1,0 +1,25 @@
+{
+  "name": "KatyQuery",
+  "version": "0.0.1",
+  "description": "KatyQuery is a query generator and binder to JavaScript models",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lfreneda/KatyQuery"
+  },
+  "keywords": [
+    "recordset",
+    "binders",
+    "models",
+    "javascript",
+    "queries"
+  ],
+  "author": "Luiz Freneda <lfreneda@gmail.com> (http://www.freneda.com.br/)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lfreneda/KatyQuery/issues"
+  }
+}
