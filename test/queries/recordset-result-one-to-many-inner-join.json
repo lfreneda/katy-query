@@ -1,0 +1,20 @@
+[
+    {
+        "this.id": 1,
+        "this.name": "Task name",
+        "this.createdAt": "2012-04-23T18:25:43.511Z",
+        "this.employee.id": 2,
+        "this.employee.name": "Luiz Freneda",
+        "this.tags[].id": 3,
+        "this.tags[].name": "important"
+    },
+    {
+        "this.id": 1,
+        "this.name": "Task name",
+        "this.createdAt": "2012-04-23T18:25:43.511Z",
+        "this.employee.id": 2,
+        "this.employee.name": "Luiz Freneda",
+        "this.tags[].id": 4,
+        "this.tags[].name": "vip"
+    }
+]
