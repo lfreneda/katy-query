@@ -1,7 +1,7 @@
 {
-  "name": "KatyQuery",
+  "name": "katy-query",
   "version": "0.0.1",
-  "description": "KatyQuery is a query generator and binder to JavaScript models",
+  "description": "Katy Query is a query generator and binder to JavaScript models",
   "main": "index.js",
   "scripts": {
     "test": "mocha"
