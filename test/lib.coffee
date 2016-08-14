@@ -1,22 +1,43 @@
 expect = require('chai').expect
 KatyQuery = require './../lib/'
-recordSetWithNoJoinResult = require './queries/recordset-result-no-joins.json'
-recordSetWithToOneJoinResult = require './queries/recordset-result-to-one-inner-join.json'
+recordSetWithNoJoinResultAsArray = require './queries/recordset-result-no-joins-as-array.json'
+recordSetWithNoJoinResultAsObject = require './queries/recordset-result-no-joins-as-object.json'
+recordSetWithToOneJoinResultAsArray = require './queries/recordset-result-to-one-inner-join-as-array.json'
+recordSetWithToOneJoinResultAsObject = require './queries/recordset-result-to-one-inner-join-as-object.json'
 recordSetWithToManyJoinResult = require './queries/recordset-result-to-many-inner-join.json'
 
 describe 'given a record set result in KatyQuery format', ->
   
-  describe 'with no joins', ->
+  describe 'as array with no joins', ->
     it 'should bind as expected', ->
-      model = KatyQuery.toObject recordSetWithNoJoinResult
+      model = KatyQuery.toObject recordSetWithNoJoinResultAsArray
       expect(model).to.deep.equal {
           id: 1
           name: 'Task name'
       } 
 
-  describe 'with a `to one` inner join', ->
+  describe 'as object with no joins', ->
     it 'should bind as expected', ->
-      model = KatyQuery.toObject recordSetWithToOneJoinResult
+      model = KatyQuery.toObject recordSetWithNoJoinResultAsObject
+      expect(model).to.deep.equal {
+          id: 1
+          name: 'Task name'
+      } 
+
+  describe 'as array with a `to one` inner join', ->
+    it 'should bind as expected', ->
+      model = KatyQuery.toObject recordSetWithToOneJoinResultAsArray
+      expect(model).to.deep.equal {
+          id: 1
+          name: 'Task name'
+          employee: 
+              id: 2
+              name: 'Luiz Freneda'
+      } 
+
+  describe 'as object with a `to one` inner join', ->
+    it 'should bind as expected', ->
+      model = KatyQuery.toObject recordSetWithToOneJoinResultAsObject
       expect(model).to.deep.equal {
           id: 1
           name: 'Task name'
@@ -26,7 +47,7 @@ describe 'given a record set result in KatyQuery format', ->
       } 
 
   describe 'with a `to many` inner join', ->
-    it 'should bind as expected', ->
+    it.skip 'should bind as expected', ->
       model = KatyQuery.toObject recordSetWithToManyJoinResult
       expect(model).to.deep.equal {
           id: 1
