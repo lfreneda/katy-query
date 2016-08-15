@@ -1,7 +1,9 @@
 # KatyQuery
-:microphone: KatyQuery is a query generator and binder to javascript models 
+:microphone: KatyQuery: is a JavaScript 'n SQL utility library
 
-Generator generates queries in Katy queries format:
+### Record set result to javascript objects
+
+Given input:
 
 ```
   SELECT 
@@ -21,7 +23,7 @@ Generator generates queries in Katy queries format:
     tasks.id = 15
 ```
 
-Binders binds result set from Katy queries format to javascript objects:
+Output should be:
 
 ```
 {
@@ -38,5 +40,7 @@ Binders binds result set from Katy queries format to javascript objects:
   ]
 }
 ```
+
+### Credits
 
 named by [@maurogarcia](http://github.com/maurogarcia)

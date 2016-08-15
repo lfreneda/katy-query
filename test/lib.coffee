@@ -63,8 +63,8 @@ describe 'given a record set result in KatyQuery format', ->
             id: 2
             name: 'Luiz Freneda'
           tags: [
-            {id: 3, name: 'katy'}
-            {id: 4, name: 'query'}
+            { id: 3, name: 'katy' }
+            { id: 4, name: 'query' }
           ]
         }
 
@@ -73,18 +73,9 @@ describe 'given a record set result in KatyQuery format', ->
       it 'should bind as expected', ->
         model = KatyQuery.toObjects recordSet.listResult.withNoJoinResult
         expect(model).to.deep.equal [
-          {
-            id: 1
-            name: 'Task name 1'
-          }
-          {
-            id: 2
-            name: 'Task name 2'
-          }
-          {
-            id: 3
-            name: 'Task name 3'
-          }
+          { id: 1, name: 'Task name 1' }
+          { id: 2, name: 'Task name 2' }
+          { id: 3, name: 'Task name 3' }
         ]
 
     describe 'with a `to one` inner join', ->
@@ -120,8 +111,8 @@ describe 'given a record set result in KatyQuery format', ->
               id: 3
               name: 'Luiz Freneda'
             tags: [
-              {id: 10, name: 'katy'}
-              {id: 11, name: 'query'}
+              { id: 10, name: 'katy' }
+              { id: 11, name: 'query' }
             ]
           }
           {
@@ -131,8 +122,8 @@ describe 'given a record set result in KatyQuery format', ->
               id: 4
               name: 'Nicola Zagari'
             tags: [
-              {id: 11, name: 'query'}
-              {id: 12, name: 'cto'}
+              { id: 11, name: 'query' }
+              { id: 12, name: 'cto' }
             ]
           }
         ]
