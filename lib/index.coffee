@@ -16,30 +16,24 @@ class KatyQuery
   _distinctRootEntity: (rows) ->
 
     index = 0
-    results = {}
+    rootEntities = {}
 
     for row in rows
-      rootEntity = results[row['this.id']] or {}
-
-      console.log 'row id: ', row['this.id']
-
+      rootEntity = rootEntities[row['this.id']] or {}
+      # console.log 'row id: ', row['this.id']
       for own column of row
         path = column.replace 'this.', ''
-        path = path.replace('[]', '[' + index + ']') if column.indexOf('[].') isnt -1
+        path = path.replace('[]', "[#{index}]") if column.indexOf('[].') isnt -1
         _.set rootEntity, path, row[column]
-
-        console.log path, '=', row[column]
-
-      results[row['this.id']] = rootEntity
-
+        # console.log path, '=', row[column]
+      rootEntities[row['this.id']] = rootEntity
       index++
 
-    results = (value for key, value of results)
+    results = (value for key, value of rootEntities)
     for result in results
       for own property of result
-        type = Object::toString.call result[property]
-        if type is '[object Array]'
-          result[property] = _.filter result[property], (item) -> item
+        propertyType = Object::toString.call result[property]
+        result[property] = (_.filter result[property], (item) -> item) if propertyType is '[object Array]'
 
     results
 
