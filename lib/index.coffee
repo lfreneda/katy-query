@@ -15,7 +15,7 @@ class KatyQuery
     rootEntities = {}
 
     for row in rows
-      
+
       modelId = row['this.id'];
       rootEntity = rootEntities[modelId] or {}
 
@@ -28,10 +28,8 @@ class KatyQuery
       index++
 
     results = (value for key, value of rootEntities)
-
     for result in results
-      for own property, value of result
-        value = (_.filter result[property], (item) -> item) if _.isArray(value)
+      value = (_.filter value, (i) -> i) for own property, value of result when _.isArray(value)
     results
 
 module.exports = new KatyQuery()
