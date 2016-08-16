@@ -15,15 +15,14 @@ class KatyQuery
     rootEntities = {}
 
     for row in rows
+      
       modelId = row['this.id'];
-      # console.log 'row id: ', modelId
       rootEntity = rootEntities[modelId] or {}
 
       for own column, value of row
         path = column.replace 'this.', ''
         path = path.replace('[]', "[#{index}]") if column.indexOf('[].') isnt -1
         _.set rootEntity, path, value
-        # console.log path, '=', row[column]
 
       rootEntities[modelId] = rootEntity
       index++
@@ -31,8 +30,8 @@ class KatyQuery
     results = (value for key, value of rootEntities)
 
     for result in results
-      for own property of result
-        result[property] = (_.filter result[property], (item) -> item) if _.isArray(result[property])
+      for own property, value of result
+        value = (_.filter result[property], (item) -> item) if _.isArray(value)
     results
 
 module.exports = new KatyQuery()
