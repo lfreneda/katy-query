@@ -102,6 +102,7 @@ describe 'given a record set result in KatyQuery format', ->
     describe 'with a `to many` inner join', ->
       it 'should bind as expected', ->
         model = KatyQuery.toModels recordSet.listResult.withToManyJoinResult
+        console.log model
         expect(model).to.deep.equal [
           {
             id: 1

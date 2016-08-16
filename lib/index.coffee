@@ -32,7 +32,7 @@ class KatyQuery
 
     results = (value for key, value of rootEntities)
     for result in results
-      value = (_.filter value, (i) -> i) for own property, value of result when _.isArray value
+      result[property] = (_.filter value, (i) -> i) for own property, value of result when _.isArray value
     results
 
 module.exports = new KatyQuery()
