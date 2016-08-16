@@ -2,12 +2,15 @@ _ = require 'lodash'
 
 class KatyQuery
 
-  toObjects: (recordSetResult) ->
-    return @_distinctRootEntity recordSetResult if _.isArray(recordSetResult)
-    return @_distinctRootEntity [ recordSetResult ] if _.isObject(recordSetResult)
-    return null
+  toModel: (recordSetResult) ->
+    results = @toModels recordSetResult
+    return null if not results
+    return results[0]
 
-  toObject: (recordSetResult) -> @toObjects(recordSetResult)[0]
+  toModels: (recordSetResult) ->
+    return @_distinctRootEntity recordSetResult if _.isArray recordSetResult
+    return @_distinctRootEntity [ recordSetResult ] if _.isObject recordSetResult
+    return null
 
   _distinctRootEntity: (rows) ->
 
