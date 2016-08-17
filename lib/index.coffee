@@ -20,14 +20,13 @@ class KatyQuery
     for row in rows
 
       id = row['this.id']
-      rootEntity = rootEntities[id] or {}
+      rootEntities[id] or= {}
 
       for own column, value of row
         path = column.replace 'this.', ''
         path = path.replace '[]', "[#{index}]" if column.indexOf '[].' isnt -1
-        _.set rootEntity, path, value
+        _.set rootEntities[id], path, value
 
-      rootEntities[id] = rootEntity
       index++
 
     results = (value for key, value of rootEntities)
