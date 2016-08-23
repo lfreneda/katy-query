@@ -1,5 +1,5 @@
 expect = require('chai').expect
-KatyQuery = require './../lib/'
+ResultTransfomer = require './../lib/resultTransformer'
 
 recordSet =
   listResult:
@@ -17,7 +17,7 @@ describe 'given a record set result in KatyQuery format', ->
   describe 'for single entity result', ->
     describe 'as array with no joins', ->
       it 'should bind as expected', ->
-        model = KatyQuery.toModel recordSet.singleResult.withNoJoinResultAsArray
+        model = ResultTransfomer.toModel recordSet.singleResult.withNoJoinResultAsArray
         expect(model).to.deep.equal {
           id: 1
           name: 'Task name'
@@ -25,7 +25,7 @@ describe 'given a record set result in KatyQuery format', ->
 
     describe 'as object with no joins', ->
       it 'should bind as expected', ->
-        model = KatyQuery.toModel recordSet.singleResult.withNoJoinResultAsObject
+        model = ResultTransfomer.toModel recordSet.singleResult.withNoJoinResultAsObject
         expect(model).to.deep.equal {
           id: 1
           name: 'Task name'
@@ -33,7 +33,7 @@ describe 'given a record set result in KatyQuery format', ->
 
     describe 'as array with a `to one` inner join', ->
       it 'should bind as expected', ->
-        model = KatyQuery.toModel recordSet.singleResult.withToOneJoinResultAsArray
+        model = ResultTransfomer.toModel recordSet.singleResult.withToOneJoinResultAsArray
         expect(model).to.deep.equal {
           id: 1
           name: 'Task name'
@@ -44,7 +44,7 @@ describe 'given a record set result in KatyQuery format', ->
 
     describe 'as object with a `to one` inner join', ->
       it 'should bind as expected', ->
-        model = KatyQuery.toModel recordSet.singleResult.withToOneJoinResultAsObject
+        model = ResultTransfomer.toModel recordSet.singleResult.withToOneJoinResultAsObject
         expect(model).to.deep.equal {
           id: 1
           name: 'Task name'
@@ -55,7 +55,7 @@ describe 'given a record set result in KatyQuery format', ->
 
     describe 'with a `to many` inner join', ->
       it 'should bind as expected', ->
-        model = KatyQuery.toModel recordSet.singleResult.withToManyJoinResult
+        model = ResultTransfomer.toModel recordSet.singleResult.withToManyJoinResult
         expect(model).to.deep.equal {
           id: 1
           name: 'Task name'
@@ -71,7 +71,7 @@ describe 'given a record set result in KatyQuery format', ->
   describe 'for list entity result', ->
     describe 'with no joins', ->
       it 'should bind as expected', ->
-        model = KatyQuery.toModels recordSet.listResult.withNoJoinResult
+        model = ResultTransfomer.toModels recordSet.listResult.withNoJoinResult
         expect(model).to.deep.equal [
           { id: 1, name: 'Task name 1' }
           { id: 2, name: 'Task name 2' }
@@ -80,7 +80,7 @@ describe 'given a record set result in KatyQuery format', ->
 
     describe 'with a `to one` inner join', ->
       it 'should bind as expected', ->
-        model = KatyQuery.toModels recordSet.listResult.withToOneJoinResult
+        model = ResultTransfomer.toModels recordSet.listResult.withToOneJoinResult
         expect(model).to.deep.equal [
           {
             id: 1
@@ -101,7 +101,7 @@ describe 'given a record set result in KatyQuery format', ->
 
     describe 'with a `to many` inner join', ->
       it 'should bind as expected', ->
-        model = KatyQuery.toModels recordSet.listResult.withToManyJoinResult
+        model = ResultTransfomer.toModels recordSet.listResult.withToManyJoinResult
         expect(model).to.deep.equal [
           {
             id: 1

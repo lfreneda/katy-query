@@ -4,7 +4,8 @@
   "description": "Katy Query is a query generator and binder to JavaScript models",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "autotest": "./node_modules/.bin/supervisor -q -n exit -x npm test"
   },
   "repository": {
     "type": "git",
@@ -25,7 +26,8 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "mocha": "^3.0.2",
-    "sinon": "^1.17.5"
+    "sinon": "^1.17.5",
+    "supervisor": "^0.11.0"
   },
   "dependencies": {
     "lodash": "^4.15.0"

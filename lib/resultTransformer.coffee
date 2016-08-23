@@ -1,6 +1,6 @@
 _ = require 'lodash'
 
-class KatyQuery
+class KatyQueryResultTransformer
 
   toModel: (recordSetResult) ->
     results = @toModels recordSetResult
@@ -31,4 +31,4 @@ class KatyQuery
     path = path.replace '[]', "[#{index}]" if column.indexOf '[].' isnt -1
     path
 
-module.exports = new KatyQuery()
+module.exports = new KatyQueryResultTransformer()
