@@ -1,18 +1,18 @@
 _ = require 'lodash'
 
-class KatyQueryResultTransformer
+class ResultTransformer
 
-  toModel: (recordSetResult) ->
+  @toModel: (recordSetResult) ->
     results = @toModels recordSetResult
     return null if not results
     return results[0]
 
-  toModels: (recordSetResult) ->
+  @toModels: (recordSetResult) ->
     return @_distinctRootEntity recordSetResult if _.isArray recordSetResult
     return @_distinctRootEntity [ recordSetResult ] if _.isObject recordSetResult
     return null
 
-  _distinctRootEntity: (rows) ->
+  @_distinctRootEntity: (rows) ->
 
     rootEntities = {}
 
@@ -26,9 +26,9 @@ class KatyQueryResultTransformer
       result[property] = (_.filter value, (i) -> i) for own property, value of result when _.isArray value
     results
 
-  _getPath: (column, index) ->
+  @_getPath: (column, index) ->
     path = column.replace 'this.', ''
     path = path.replace '[]', "[#{index}]" if column.indexOf '[].' isnt -1
     path
 
-module.exports = new KatyQueryResultTransformer()
+module.exports = ResultTransformer

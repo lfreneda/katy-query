@@ -3,15 +3,15 @@ ResultTransfomer = require './../lib/resultTransformer'
 
 recordSet =
   listResult:
-    withNoJoinResult: require './queries/recordset-with-list-result-no-joins.json'
-    withToOneJoinResult: require './queries/recordset-with-list-result-to-one-inner-join.json'
-    withToManyJoinResult: require './queries/recordset-with-list-result-to-many-inner-join.json'
+    withNoJoinResult: require './.data/recordset-with-list-result-no-joins.json'
+    withToOneJoinResult: require './.data/recordset-with-list-result-to-one-inner-join.json'
+    withToManyJoinResult: require './.data/recordset-with-list-result-to-many-inner-join.json'
   singleResult:
-    withNoJoinResultAsArray: require './queries/recordset-with-single-result-no-joins-as-array.json'
-    withNoJoinResultAsObject: require './queries/recordset-with-single-result-no-joins-as-object.json'
-    withToOneJoinResultAsArray: require './queries/recordset-with-single-result-to-one-inner-join-as-array.json'
-    withToOneJoinResultAsObject: require './queries/recordset-with-single-result-to-one-inner-join-as-object.json'
-    withToManyJoinResult: require './queries/recordset-with-single-result-to-many-inner-join.json'
+    withNoJoinResultAsArray: require './.data/recordset-with-single-result-no-joins-as-array.json'
+    withNoJoinResultAsObject: require './.data/recordset-with-single-result-no-joins-as-object.json'
+    withToOneJoinResultAsArray: require './.data/recordset-with-single-result-to-one-inner-join-as-array.json'
+    withToOneJoinResultAsObject: require './.data/recordset-with-single-result-to-one-inner-join-as-object.json'
+    withToManyJoinResult: require './.data/recordset-with-single-result-to-many-inner-join.json'
 
 describe 'given a record set result in KatyQuery format', ->
   describe 'for single entity result', ->
