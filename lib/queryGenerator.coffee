@@ -39,8 +39,11 @@ class QueryGenerator
   @toSql: (table, relations = []) ->
     configuration = configurations[table]
     return null if not configuration
-    sqlText = "SELECT #{@_toColumnSql(configuration, relations)} FROM #{configuration.table} "
-    sqlText += configuration.relations[relation].sql for relation in relations if relations
+
+    sqlText = "SELECT #{@_toColumnSql(configuration, relations)}
+               FROM #{configuration.table}
+               #{@_toJoinSql(configuration, relations)}"
+
     sqlText.trim()
 
   @_toColumnSql: (configuration, relations = []) ->
@@ -51,5 +54,10 @@ class QueryGenerator
         relationColumns = configuration.relations[relation].columns
         columns.push "#{relationTable}.#{column.name} \"#{column.alias}\"" for column in relationColumns
     columns.join ', '
+
+  @_toJoinSql:(configuration, relations = []) ->
+    joinSqlText = ''
+    joinSqlText += configuration.relations[relation].sql for relation in relations if relations
+    joinSqlText
 
 module.exports = QueryGenerator
