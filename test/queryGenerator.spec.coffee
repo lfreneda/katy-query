@@ -67,6 +67,7 @@ describe 'Query generator', ->
           FROM tasks
         '
     describe 'given query with join', ->
+      it.skip 'but relations requested was not configured, should be ignored', ->
       it 'sql should be as expected', ->
         expect(QueryGenerator.toSql('tasks', ['employee'])).to.equal 'SELECT
                 id "this.id",

@@ -46,10 +46,10 @@ class QueryGenerator
   @_toColumnSql: (configuration, relations = []) ->
     columns = configuration.columns.map (column) -> "#{column.name} \"#{column.alias}\""
     for relation in relations
-      relationConfiguration = configuration.relations[relation]
-      relationTable = relationConfiguration.table
-      relationColumns = relationConfiguration.columns
-      columns.push "#{relationTable}.#{column.name} \"#{column.alias}\"" for column in relationColumns
+      if configuration.relations[relation]
+        relationTable = configuration.relations[relation].table
+        relationColumns = configuration.relations[relation].columns
+        columns.push "#{relationTable}.#{column.name} \"#{column.alias}\"" for column in relationColumns
     columns.join ', '
 
 module.exports = QueryGenerator
