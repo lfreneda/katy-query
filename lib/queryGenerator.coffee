@@ -1,4 +1,5 @@
 _ = require 'lodash'
+util = require 'util'
 configurations = null
 
 `
@@ -88,7 +89,7 @@ class QueryGenerator
     operatorHandler = @_getWhereOperatorHandler field
     result.params.push value
     field = field.replace(operatorHandler.operator, '')
-    fieldConfig = @_getFieldConfigurationIf(configuration, field)
+    fieldConfig = @_getFieldConfigurationOrDefault(configuration, field)
     result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" #{operatorHandler.operator} $#{result.params.length}"
 
   @_getWhereOperatorHandler: (field) ->
@@ -121,10 +122,10 @@ class QueryGenerator
       result.where.push "#{configuration.table}.\"#{field}\" in (#{arrValues.join(', ')})"
 
   @_whereNullClause: (field, value, result, configuration) ->
-    fieldConfig = @_getFieldConfigurationIf(configuration, field)
+    fieldConfig = @_getFieldConfigurationOrDefault(configuration, field)
     result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" is null" if value is null
 
-  @_getFieldConfigurationIf: (configuration, field) ->
+  @_getFieldConfigurationOrDefault: (configuration, field) ->
     if configuration.search[field]
       relationName = configuration.search[field].relation
       return {
