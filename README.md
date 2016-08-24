@@ -90,5 +90,7 @@ task = ResultTransfomer.toModel recordSetResult
 }
 ```
 
-#### Credits
-named by [@maurogarcia](http://github.com/maurogarcia)
+#### [References, Inspirations, credits]
+
+- [Massive-js](https://github.com/robconery/massive-js) - awesome work with postgres/orm/sql generation
+- [@maurogarcia](http://github.com/maurogarcia) - for the project name, it rocks `brodah` :microphone:
