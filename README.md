@@ -1,10 +1,10 @@
 # KatyQuery
-KatyQuery :microphone: is a Node.js 'n SQL utility library
+KatyQuery :microphone: is a Node.js 'n postgreSQL utility library
 
 ## Installation
 
 ```shell
-$ npm install katy-query
+$ npm install katy-query --save
 ```
 
 ## Usage
