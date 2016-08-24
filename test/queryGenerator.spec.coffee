@@ -334,3 +334,58 @@ describe 'Query generator', ->
       it 'when sort is provided, should be name desc', ->
         optionsSql = QueryGenerator.toOptions('tasks', { sort: '-name' })
         expect(optionsSql).to.equal 'ORDER BY tasks."name" DESC OFFSET 0 LIMIT 25'
+
+  describe 'Whole sql generation', ->
+    it 'should generate a complete n executable sql text for the given input', ->
+      result = QueryGenerator.toSql {
+        table: 'tasks'
+        relations: ['employee']
+        where: {
+          employee_id: [1,3,2]
+          employee_name: 'Luiz Freneda'
+          service_id: null
+          customer_id: [15,'null']
+          'created_at>': '2015-05-15'
+          'updated_at<': '2017-05-15'
+        },
+        options:  {
+          sort: '-description',
+          offset: 15,
+          limit: 28
+        }
+      }
+
+      expect(result).to.deep.equal {
+        sqlCount: '
+            SELECT COUNT(distinct tasks."id")
+            FROM tasks
+              LEFT JOIN employees ON tasks.employee_id = employees.id
+            WHERE
+                  tasks."employee_id" in ($1, $2, $3)
+              AND employees."name" = $4
+              AND tasks."service_id" is null
+              AND (tasks."customer_id" in ($5) OR tasks."customer_id" is null)
+              AND tasks."created_at" > $6
+              AND tasks."updated_at" < $7
+        '
+        sqlSelect: '
+            SELECT
+                id "this.id",
+                description "this.description",
+                created_at "this.createdAt",
+                employee_id "this.employee.id",
+                employees.id "this.employee.id",
+                employees.name "this.employee.name"
+            FROM tasks
+              LEFT JOIN employees ON tasks.employee_id = employees.id
+            WHERE
+                  tasks."employee_id" in ($1, $2, $3)
+              AND employees."name" = $4
+              AND tasks."service_id" is null
+              AND (tasks."customer_id" in ($5) OR tasks."customer_id" is null)
+              AND tasks."created_at" > $6
+              AND tasks."updated_at" < $7
+            ORDER BY tasks."description" DESC OFFSET 15 LIMIT 28
+        '
+        params: [ 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15' ]
+      }

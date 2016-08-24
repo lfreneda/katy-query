@@ -57,6 +57,14 @@ class QueryGenerator
 
   ###
 
+  @toSql: (args) ->
+    whereResult = @toWhere args.table, args.where
+    return {
+      sqlCount: "#{@toSelectCount(args.table, args.relations)} #{whereResult.where}"
+      sqlSelect: "#{@toSelect(args.table, args.relations)} #{whereResult.where} #{@toOptions(args.table, args.options)}"
+      params: whereResult.params
+    }
+
   @toSelectCount: (table, relations = []) ->
     configuration = configurations[table]
     return null if not configuration
@@ -175,6 +183,12 @@ class QueryGenerator
 
   @_toJoinSql:(configuration, relations = []) ->
     joinSqlText = ''
+
+    ###
+      TODO: if configuration.relations[relation] is undefined
+      when relation was not configured :S
+    ###
+
     joinSqlText += configuration.relations[relation].sql for relation in relations if relations
     joinSqlText
 
