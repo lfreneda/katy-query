@@ -14,6 +14,7 @@ return lastIndex !== -1 && lastIndex === position;
 };
 }
 `
+
 class QueryGenerator
 
   @resetConfiguration: ->
@@ -68,97 +69,72 @@ class QueryGenerator
     configuration = configurations[table]
     return null if not configuration
 
-    where = []
-    params = []
+    result =
+      where: []
+      params: []
 
     for own field, value of conditions
       if _.isArray value
-        arrValues = []
-        for arrValue in value when arrValue not in ['null', null]
-          params.push arrValue
-          arrValues.push "$#{params.length}"
-
-        includesNull = 'null' in value or null in value
-        if includesNull
-          where.push "(#{configuration.table}.\"#{field}\" in (#{arrValues.join(', ')}) OR #{configuration.table}.\"#{field}\" is null)"
-        else
-          where.push "#{configuration.table}.\"#{field}\" in (#{arrValues.join(', ')})"
+        @_whereClauseAsArray field, value, result, configuration
+      else if value is null
+        @_whereNullClause field, value, result, configuration
       else
+        @_whereOperatorClause field, value, result, configuration
 
-        # { 'field'   : 1 } is equal to
-        # { 'field>=' : 1 } is greater or equal than
-        # { 'field>'  : 1 } is greater than
-        # { 'field<=' : 1 } is less or equal than
-        # { 'field<'  : 1 } is less than
-
-        if value
-          if field.endsWith '>='
-            params.push value
-            field = field.replace('>=', '')
-            table = configuration.table
-            column = field
-            if configuration.search[field]
-              relationName = configuration.search[field].relation
-              table = configuration.relations[relationName].table
-              column = configuration.search[field].column
-
-            where.push "#{table}.\"#{column}\" >= $#{params.length}"
-          else if field.endsWith '>'
-            params.push value
-            field = field.replace('>', '')
-            table = configuration.table
-            column = field
-            if configuration.search[field]
-              relationName = configuration.search[field].relation
-              table = configuration.relations[relationName].table
-              column = configuration.search[field].column
-
-            where.push "#{table}.\"#{column}\" > $#{params.length}"
-          else if field.endsWith '<='
-            params.push value
-            field = field.replace('<=', '')
-            table = configuration.table
-            column = field
-            if configuration.search[field]
-              relationName = configuration.search[field].relation
-              table = configuration.relations[relationName].table
-              column = configuration.search[field].column
-            where.push "#{table}.\"#{column}\" <= $#{params.length}"
-          else if field.endsWith '<'
-            params.push value
-            field = field.replace('<', '')
-            table = configuration.table
-            column = field
-            if configuration.search[field]
-              relationName = configuration.search[field].relation
-              table = configuration.relations[relationName].table
-              column = configuration.search[field].column
-            where.push "#{table}.\"#{column}\" < $#{params.length}"
-          else
-            params.push value
-            table = configuration.table
-            column = field
-            if configuration.search[field]
-              relationName = configuration.search[field].relation
-              table = configuration.relations[relationName].table
-              column = configuration.search[field].column
-
-            where.push "#{table}.\"#{column}\" = $#{params.length}"
-        else
-          table = configuration.table
-          column = field
-
-          if configuration.search[field]
-            relationName = configuration.search[field].relation
-            table = configuration.relations[relationName].table
-            column = configuration.search[field].column
-
-          where.push "#{table}.\"#{column}\" is null" if value is null
-
-    result =
-      where: "WHERE #{where.join ' AND '}"
-      params: params
+    result.where = "WHERE #{result.where.join ' AND '}"
     result
+
+  @_whereOperatorClause: (field, value, result, configuration) ->
+    operatorHandler = @_getWhereOperatorHandler field
+    result.params.push value
+    field = field.replace(operatorHandler.operator, '')
+    fieldConfig = @_getFieldConfigurationIf(configuration, field)
+    result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" #{operatorHandler.operator} $#{result.params.length}"
+
+  @_getWhereOperatorHandler: (field) ->
+    operators = {
+      greaterOrEqualThanOperator: { operator: '>=' }
+      greaterThanOperator: { operator: '>' }
+      lessOrEqualThanOperator: { operator: '<=' }
+      lessThanOperator: { operator: '<' }
+      equalOperator: { operator: '=' }
+    }
+
+    operatorHandler = switch
+      when field.endsWith '>=' then operators.greaterOrEqualThanOperator
+      when field.endsWith '>' then operators.greaterThanOperator
+      when field.endsWith '<=' then operators.lessOrEqualThanOperator
+      when field.endsWith '<' then operators.lessThanOperator
+      else operators.equalOperator
+
+    operatorHandler
+
+  @_whereClauseAsArray: (field, value, result, configuration) ->
+    arrValues = []
+    for arrValue in value when arrValue not in ['null', null]
+      result.params.push arrValue
+      arrValues.push "$#{result.params.length}"
+    withNull = 'null' in value or null in value
+    if withNull
+      result.where.push "(#{configuration.table}.\"#{field}\" in (#{arrValues.join(', ')}) OR #{configuration.table}.\"#{field}\" is null)"
+    else
+      result.where.push "#{configuration.table}.\"#{field}\" in (#{arrValues.join(', ')})"
+
+  @_whereNullClause: (field, value, result, configuration) ->
+    fieldConfig = @_getFieldConfigurationIf(configuration, field)
+    result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" is null" if value is null
+
+  @_getFieldConfigurationIf: (configuration, field) ->
+    if configuration.search[field]
+      relationName = configuration.search[field].relation
+      return {
+        table: configuration.relations[relationName].table
+        column: configuration.search[field].column
+      }
+    return {
+      table: configuration.table
+      column: field
+    }
 
   @_toColumnSql: (configuration, relations = []) ->
     columns = configuration.columns.map (column) -> "#{column.name} \"#{column.alias}\""
