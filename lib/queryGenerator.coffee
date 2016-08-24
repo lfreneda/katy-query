@@ -14,7 +14,6 @@ return lastIndex !== -1 && lastIndex === position;
 };
 }
 `
-
 class QueryGenerator
 
   @resetConfiguration: ->
@@ -56,7 +55,7 @@ class QueryGenerator
 
   ###
 
-  @toSql: (table, relations = []) ->
+  @toSelect: (table, relations = []) ->
     configuration = configurations[table]
     return null if not configuration
     sqlText = "SELECT #{@_toColumnSql(configuration, relations)}
@@ -96,25 +95,65 @@ class QueryGenerator
           if field.endsWith '>='
             params.push value
             field = field.replace('>=', '')
-            where.push "#{configuration.table}.\"#{field}\" >= $#{params.length}"
+            table = configuration.table
+            column = field
+            if configuration.search[field]
+              relationName = configuration.search[field].relation
+              table = configuration.relations[relationName].table
+              column = configuration.search[field].column
+
+            where.push "#{table}.\"#{column}\" >= $#{params.length}"
           else if field.endsWith '>'
             params.push value
             field = field.replace('>', '')
-            where.push "#{configuration.table}.\"#{field}\" > $#{params.length}"
-            #where.push "#{field} > $#{params.length}"
+            table = configuration.table
+            column = field
+            if configuration.search[field]
+              relationName = configuration.search[field].relation
+              table = configuration.relations[relationName].table
+              column = configuration.search[field].column
+
+            where.push "#{table}.\"#{column}\" > $#{params.length}"
           else if field.endsWith '<='
             params.push value
             field = field.replace('<=', '')
-            where.push "#{configuration.table}.\"#{field}\" <= $#{params.length}"
+            table = configuration.table
+            column = field
+            if configuration.search[field]
+              relationName = configuration.search[field].relation
+              table = configuration.relations[relationName].table
+              column = configuration.search[field].column
+            where.push "#{table}.\"#{column}\" <= $#{params.length}"
           else if field.endsWith '<'
             params.push value
             field = field.replace('<', '')
-            where.push "#{configuration.table}.\"#{field}\" < $#{params.length}"
+            table = configuration.table
+            column = field
+            if configuration.search[field]
+              relationName = configuration.search[field].relation
+              table = configuration.relations[relationName].table
+              column = configuration.search[field].column
+            where.push "#{table}.\"#{column}\" < $#{params.length}"
           else
             params.push value
-            where.push "#{configuration.table}.\"#{field}\" = $#{params.length}"
+            table = configuration.table
+            column = field
+            if configuration.search[field]
+              relationName = configuration.search[field].relation
+              table = configuration.relations[relationName].table
+              column = configuration.search[field].column
+
+            where.push "#{table}.\"#{column}\" = $#{params.length}"
         else
-          where.push "#{configuration.table}.\"#{field}\" is null" if value is null
+          table = configuration.table
+          column = field
+
+          if configuration.search[field]
+            relationName = configuration.search[field].relation
+            table = configuration.relations[relationName].table
+            column = configuration.search[field].column
+
+          where.push "#{table}.\"#{column}\" is null" if value is null
 
     result =
       where: "WHERE #{where.join ' AND '}"

@@ -61,11 +61,11 @@ describe 'Query generator', ->
       }
     })
 
-  describe 'Sql select generation', ->
+  describe 'Select sql generation', ->
     it.skip 'should [return null or throw err] when configuration for given table was not defined', ->
     describe 'given simple query with no join', ->
       it 'sql should be as expected', ->
-        expect(QueryGenerator.toSql('tasks')).to.equal 'SELECT
+        expect(QueryGenerator.toSelect('tasks')).to.equal 'SELECT
               id "this.id",
               description "this.description",
               created_at "this.createdAt",
@@ -75,7 +75,7 @@ describe 'Query generator', ->
     describe 'given query with join', ->
       it.skip 'but relations requested was not configured, should be ignored', ->
       it 'sql should be as expected', ->
-        expect(QueryGenerator.toSql('tasks', ['employee'])).to.equal 'SELECT
+        expect(QueryGenerator.toSelect('tasks', ['employee'])).to.equal 'SELECT
                 id "this.id",
                 description "this.description",
                 created_at "this.createdAt",
@@ -86,7 +86,7 @@ describe 'Query generator', ->
             LEFT JOIN employees ON tasks.employee_id = employees.id
           '
 
-  describe 'Where clause generation', ->
+  describe 'Where sql clause generation', ->
     it.skip 'should [return null or throw err] when configuration for given table was not defined', ->
     it 'when conditions is null, result should be as expected', ->
       expect(QueryGenerator.toWhere(null)).to.deep.equal {
@@ -109,11 +109,29 @@ describe 'Query generator', ->
           params: [ 1 ]
         }
 
+      it 'single equal column of an relation condition (when configured), result should be as expected', ->
+        expect(QueryGenerator.toWhere('tasks', {
+          employee_name: 'Luiz Freneda'
+        })).to.deep.equal {
+          where: 'WHERE employees."name" = $1'
+          params: [
+            'Luiz Freneda'
+          ]
+        }
+
       it 'single is null condition, result should be as expected', ->
         expect(QueryGenerator.toWhere('tasks', {
           employee_id: null
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" is null'
+          params: []
+        }
+
+      it 'single is null column of an relation condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere('tasks', {
+          employee_name: null
+        })).to.deep.equal {
+          where: 'WHERE employees."name" is null'
           params: []
         }
 
@@ -125,12 +143,28 @@ describe 'Query generator', ->
           params: [ 15 ]
         }
 
+      it 'single greater or equal than column of an relation condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere('tasks', {
+          'employee_name>=': 15
+        })).to.deep.equal {
+          where: 'WHERE employees."name" >= $1'
+          params: [ 15 ]
+        }
+
       it 'single greater than condition, result should be as expected', ->
         expect(QueryGenerator.toWhere('tasks', {
           'employee_id>': 15
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" > $1'
           params: [ 15 ]
+        }
+
+      it 'single greater than column of an relation condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere('tasks', {
+          'employee_name>': 159
+        })).to.deep.equal {
+          where: 'WHERE employees."name" > $1'
+          params: [ 159 ]
         }
 
       it 'single less than condition, result should be as expected', ->
@@ -141,12 +175,28 @@ describe 'Query generator', ->
           params: [ 88 ]
         }
 
+      it 'single less than column of an relation condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere('tasks', {
+          'employee_name<': 34
+        })).to.deep.equal {
+          where: 'WHERE employees."name" < $1'
+          params: [ 34 ]
+        }
+
       it 'single less or equal than condition, result should be as expected', ->
         expect(QueryGenerator.toWhere('tasks', {
           'employee_id<=': 5
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" <= $1'
           params: [ 5 ]
+        }
+
+      it 'single less than column of an relation condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere('tasks', {
+          'employee_name<=': 36
+        })).to.deep.equal {
+          where: 'WHERE employees."name" <= $1'
+          params: [ 36 ]
         }
 
       it 'multiples equal conditions, result should be as expected', ->
@@ -157,6 +207,7 @@ describe 'Query generator', ->
           where: 'WHERE tasks."employee_id" = $1 AND tasks."description" = $2'
           params: [ 1, 'task description here' ]
         }
+
     describe 'array comparison', ->
       it 'single in condition, result should be as expected', ->
         expect(QueryGenerator.toWhere('tasks', {
@@ -215,15 +266,22 @@ describe 'Query generator', ->
       it.skip 'tbd', ->
 
     describe 'complex conditions', ->
-      it.skip 'complex conditions, result should be as expected', ->
-        expect(QueryGenerator.toWhere({
+      it 'complex conditions, result should be as expected', ->
+        expect(QueryGenerator.toWhere('tasks', {
            employee_id: [1,3,2]
-           service_id: 'null'
+           employee_name: 'Luiz Freneda'
+           service_id: null
            customer_id: [15,'null']
           'created_at>': '2015-05-15'
           'updated_at<': '2017-05-15'
         })).to.deep.equal {
-          where: 'WHERE employee_id in ($1, $2, $3) AND customer_id = $4'
-          params: [ 1, 3, 2, 9 ]
+          where: 'WHERE tasks."employee_id" in ($1, $2, $3)
+                    AND employees."name" = $4
+                    AND tasks."service_id" is null
+                    AND (tasks."customer_id" in ($5) OR tasks."customer_id" is null)
+                    AND tasks."created_at" > $6
+                    AND tasks."updated_at" < $7
+          '
+          params: [ 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15' ]
         }
 
