@@ -1,9 +1,51 @@
 # KatyQuery
 KatyQuery :microphone: is a Node.js 'n SQL utility library
 
+## Installation
+
+```shell
+$ npm install search-query-parser
+```
+
+## Usage
+
 ### Query Generator
 
 generates select query in KatyQuery format, so you can use result transformer
+
+```javascript
+QueryGenerator = require('katy-query').QueryGenerator
+QueryGenerator.configure({
+    table: 'tasks'
+    columns: [
+      { name: 'id', alias: 'this.id' }
+      { name: 'description', alias: 'this.description' }
+      { name: 'created_at', alias: 'this.createdAt' }
+      { name: 'employee_id', alias: 'this.employee.id' }
+    ]
+    relations: {
+      employee: {
+        table: 'employees'
+        sql: 'LEFT JOIN employees ON tasks.employee_id = employees.id'
+        columns: [
+          { name: 'id', alias: 'this.employee.id' }
+          { name: 'name', alias: 'this.employee.name' }
+        ]
+      },
+      tags: {
+        table: 'tags'
+        sql: 'LEFT JOIN tasks_tags ON tasks_tags.taskId = tasks.id LEFT JOIN tags ON tasks_tags.tagId = tags.id'
+        columns: [
+          { name: 'id', alias: 'this.tags[].id' }
+          { name: 'name', alias: 'this.tags[].name' }
+        ]
+      }
+    }
+  });
+  
+QueryGenerator.toSql('tasks', ['employee', 'tags']);
+```
+
 
 ```
   SELECT 
@@ -26,6 +68,11 @@ generates select query in KatyQuery format, so you can use result transformer
 ### Result transformer 
 
 binds record set result to javascript objects
+
+```javascript
+ResultTransfomer = require('katy-query').ResultTransfomer
+task = ResultTransfomer.toModel recordSetResult
+```
 
 ```
 {
