@@ -1,9 +1,9 @@
 # KatyQuery
-:microphone: KatyQuery: is a JavaScript 'n SQL utility library
+KatyQuery :microphone: is a Node.js 'n SQL utility library
 
-### Record set result to javascript objects
+### Query Generator
 
-Given input:
+generates select query in KatyQuery format, so you can use result transformer
 
 ```
   SELECT 
@@ -23,7 +23,9 @@ Given input:
     tasks.id = 15
 ```
 
-Output should be:
+### Result transformer 
+
+binds record set result to javascript objects
 
 ```
 {
@@ -41,6 +43,5 @@ Output should be:
 }
 ```
 
-### Credits
-
+#### Credits
 named by [@maurogarcia](http://github.com/maurogarcia)

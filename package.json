@@ -1,7 +1,7 @@
 {
   "name": "katy-query",
   "version": "0.0.1",
-  "description": "Katy Query is a query generator and binder to JavaScript models",
+  "description": "KatyQuery is a Node.js 'n SQL utility library",
   "main": "index.js",
   "scripts": {
     "test": "mocha",
