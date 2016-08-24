@@ -4,7 +4,7 @@ KatyQuery :microphone: is a Node.js 'n SQL utility library
 ## Installation
 
 ```shell
-$ npm install search-query-parser
+$ npm install katy-query
 ```
 
 ## Usage
