@@ -34,7 +34,7 @@ describe 'Query generator', ->
     it.skip 'adding duplicated configuration, older should be override', -> #should pass
     it.skip 'adding invalid configuration, should throws exception or warning', ->
 
-  describe 'Sql generation', ->
+  describe 'Sql select generation', ->
     beforeEach ->
       QueryGenerator.configure({
         table: 'tasks'
@@ -79,3 +79,144 @@ describe 'Query generator', ->
             FROM tasks
             LEFT JOIN employees ON tasks.employee_id = employees.id
           '
+
+  describe 'Where clause generation', ->
+    it 'when conditions is null, result should be as expected', ->
+      expect(QueryGenerator.toWhere(null)).to.deep.equal {
+        where: 'WHERE 1=1'
+        params: []
+      }
+
+    it 'when conditions is empty, result should be as expected', ->
+      expect(QueryGenerator.toWhere({})).to.deep.equal {
+        where: 'WHERE 1=1'
+        params: []
+      }
+
+    describe 'basic comparison', ->
+      it 'single equal condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          employee_id: 1
+        })).to.deep.equal {
+          where: 'WHERE employee_id = $1'
+          params: [ 1 ]
+        }
+
+      it 'single is null condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          employee_id: null
+        })).to.deep.equal {
+          where: 'WHERE employee_id is null'
+          params: []
+        }
+
+      it 'single greater or equal than condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          'employee_id>=': 15
+        })).to.deep.equal {
+          where: 'WHERE employee_id >= $1'
+          params: [ 15 ]
+        }
+
+      it 'single greater than condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          'employee_id>': 15
+        })).to.deep.equal {
+          where: 'WHERE employee_id > $1'
+          params: [ 15 ]
+        }
+
+      it 'single less than condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          'employee_id<': 88
+        })).to.deep.equal {
+          where: 'WHERE employee_id < $1'
+          params: [ 88 ]
+        }
+
+      it 'single less or equal than condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          'employee_id<=': 5
+        })).to.deep.equal {
+          where: 'WHERE employee_id <= $1'
+          params: [ 5 ]
+        }
+
+      it 'multiples equal conditions, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          employee_id: 1
+          customer_id: 2
+        })).to.deep.equal {
+          where: 'WHERE employee_id = $1 AND customer_id = $2'
+          params: [ 1, 2 ]
+        }
+    describe 'array comparison', ->
+      it 'single in condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          employee_id: [1,3,2]
+        })).to.deep.equal {
+          where: 'WHERE employee_id in ($1, $2, $3)'
+          params: [ 1, 3, 2 ]
+        }
+
+      it 'single in conditions with null (as string) included, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          employee_id: [1,3,2,'null']
+        })).to.deep.equal {
+          where: 'WHERE (employee_id in ($1, $2, $3) OR employee_id is null)'
+          params: [ 1, 3, 2 ]
+        }
+
+      it 'single in conditions with null included, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          employee_id: [1,3,2,null]
+        })).to.deep.equal {
+          where: 'WHERE (employee_id in ($1, $2, $3) OR employee_id is null)'
+          params: [ 1, 3, 2 ]
+        }
+
+      it 'multiples in condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          employee_id: [1,3,2]
+          customer_id: [9,8,7]
+        })).to.deep.equal {
+          where: 'WHERE employee_id in ($1, $2, $3) AND customer_id in ($4, $5, $6)'
+          params: [ 1, 3, 2, 9, 8, 7 ]
+        }
+
+      it 'multiples in condition with null included, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          employee_id: [1,3,2, 'null']
+          customer_id: [9,8,7]
+        })).to.deep.equal {
+          where: 'WHERE (employee_id in ($1, $2, $3) OR employee_id is null) AND customer_id in ($4, $5, $6)'
+          params: [ 1, 3, 2, 9, 8, 7 ]
+        }
+
+      it 'multiples in/equal condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          employee_id: [1,3,2]
+          customer_id: 9
+        })).to.deep.equal {
+          where: 'WHERE employee_id in ($1, $2, $3) AND customer_id = $4'
+          params: [ 1, 3, 2, 9 ]
+        }
+
+    describe 'pattern matching', ->
+      it.skip 'tbd', ->
+    describe 'regex', ->
+      it.skip 'tbd', ->
+
+    describe 'complex conditions', ->
+      it.skip 'complex conditions, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+           employee_id: [1,3,2]
+           service_id: 'null'
+           customer_id: [15,'null']
+          'created_at>': '2015-05-15'
+          'updated_at<': '2017-05-15'
+        })).to.deep.equal {
+          where: 'WHERE employee_id in ($1, $2, $3) AND customer_id = $4'
+          params: [ 1, 3, 2, 9 ]
+        }
+
