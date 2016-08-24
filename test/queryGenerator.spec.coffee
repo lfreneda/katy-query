@@ -62,28 +62,44 @@ describe 'Query generator', ->
     })
 
   describe 'Select sql generation', ->
-    it.skip 'should [return null or throw err] when configuration for given table was not defined', ->
-    describe 'given simple query with no join', ->
+    describe 'select count', ->
+      it.skip 'should [return null or throw err] when configuration for given table was not defined', ->
+      describe 'given simple query with no join', ->
       it 'sql should be as expected', ->
-        expect(QueryGenerator.toSelect('tasks')).to.equal 'SELECT
-              id "this.id",
-              description "this.description",
-              created_at "this.createdAt",
-              employee_id "this.employee.id"
-          FROM tasks
-        '
+        expect(QueryGenerator.toSelectCount('tasks')).to.equal 'SELECT COUNT(distinct tasks."id") FROM tasks'
+
     describe 'given query with join', ->
       it.skip 'but relations requested was not configured, should be ignored', ->
       it 'sql should be as expected', ->
-        expect(QueryGenerator.toSelect('tasks', ['employee'])).to.equal 'SELECT
+        expect(QueryGenerator.toSelectCount('tasks', ['employee'])).to.equal '
+            SELECT COUNT(distinct tasks."id")
+            FROM tasks
+            LEFT JOIN employees ON tasks.employee_id = employees.id
+        '
+
+    describe 'select columns', ->
+      it.skip 'should [return null or throw err] when configuration for given table was not defined', ->
+      describe 'given simple query with no join', ->
+        it 'sql should be as expected', ->
+          expect(QueryGenerator.toSelect('tasks')).to.equal 'SELECT
                 id "this.id",
                 description "this.description",
                 created_at "this.createdAt",
-                employee_id "this.employee.id",
-                employees.id "this.employee.id",
-                employees.name "this.employee.name"
+                employee_id "this.employee.id"
             FROM tasks
-            LEFT JOIN employees ON tasks.employee_id = employees.id
+          '
+      describe 'given query with join', ->
+        it.skip 'but relations requested was not configured, should be ignored', ->
+        it 'sql should be as expected', ->
+          expect(QueryGenerator.toSelect('tasks', ['employee'])).to.equal 'SELECT
+                  id "this.id",
+                  description "this.description",
+                  created_at "this.createdAt",
+                  employee_id "this.employee.id",
+                  employees.id "this.employee.id",
+                  employees.name "this.employee.name"
+              FROM tasks
+              LEFT JOIN employees ON tasks.employee_id = employees.id
           '
 
   describe 'Where sql clause generation', ->
@@ -295,3 +311,26 @@ describe 'Query generator', ->
           params: [ 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15' ]
         }
 
+  describe 'Options sql generation', ->
+    describe 'All', ->
+      it 'given options, sql result should be as expected', ->
+        optionsSql = QueryGenerator.toOptions('tasks', { sort: '-name', offset: 0, limit: 10, })
+        expect(optionsSql).to.equal 'ORDER BY tasks."name" DESC OFFSET 0 LIMIT 10'
+
+    describe 'Paging', ->
+      it 'when offset is not provided, should be offset 0', ->
+        optionsSql = QueryGenerator.toOptions('tasks', { limit: 10, })
+        expect(optionsSql).to.equal 'ORDER BY tasks."id" ASC OFFSET 0 LIMIT 10'
+
+      it 'when limit is not provided, should be limit 25', ->
+        optionsSql = QueryGenerator.toOptions('tasks', { offset: 5 })
+        expect(optionsSql).to.equal 'ORDER BY tasks."id" ASC OFFSET 5 LIMIT 25'
+
+    describe 'Sorting', ->
+      it 'when sort is not provided, should be id asc', ->
+        optionsSql = QueryGenerator.toOptions('tasks', { offset: 5 })
+        expect(optionsSql).to.equal 'ORDER BY tasks."id" ASC OFFSET 5 LIMIT 25'
+
+      it 'when sort is provided, should be name desc', ->
+        optionsSql = QueryGenerator.toOptions('tasks', { sort: '-name' })
+        expect(optionsSql).to.equal 'ORDER BY tasks."name" DESC OFFSET 0 LIMIT 25'

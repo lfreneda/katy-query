@@ -57,6 +57,14 @@ class QueryGenerator
 
   ###
 
+  @toSelectCount: (table, relations = []) ->
+    configuration = configurations[table]
+    return null if not configuration
+    sqlText = "SELECT COUNT(distinct #{configuration.table}.\"id\")
+                 FROM #{configuration.table}
+                 #{@_toJoinSql(configuration, relations)}"
+    sqlText.trim()
+
   @toSelect: (table, relations = []) ->
     configuration = configurations[table]
     return null if not configuration
@@ -64,6 +72,23 @@ class QueryGenerator
                FROM #{configuration.table}
                #{@_toJoinSql(configuration, relations)}"
     sqlText.trim()
+
+  @toOptions: (table, options) ->
+    configuration = configurations[table]
+    return null if not configuration
+
+    offset = options.offset or 0
+    limit = options.limit or 25
+
+    sort = "#{configuration.table}.\"id\" ASC"
+    if options.sort
+      direction = if options.sort.indexOf('-') is 0 then 'DESC' else 'ASC'
+      options.sort = options.sort.replace('-', '')
+      sort = "#{configuration.table}.\"#{options.sort}\" #{direction}"
+
+    sqlText = "ORDER BY #{sort} OFFSET #{offset} LIMIT #{limit}"
+    sqlText
+
 
   @toWhere: (table, conditions) ->
     return { where: 'WHERE 1=1', params: [] } if _.isEmpty conditions
@@ -84,13 +109,13 @@ class QueryGenerator
     result
 
   @_whereOperatorClause: (field, value, result, configuration) ->
-    operatorHandler = @_getWhereOperatorHandler field
+    fieldOperator = @_getWhereOperator field
     result.params.push value
-    field = field.replace(operatorHandler.operator, '')
-    field = @_getFieldConfigurationOrDefault(configuration, field)
-    result.where.push "#{field.table}.\"#{field.column}\" #{operatorHandler.operator} $#{result.params.length}"
+    field = field.replace fieldOperator.operator, ''
+    field = @_getFieldConfigurationOrDefault configuration, field
+    result.where.push "#{field.table}.\"#{field.column}\" #{fieldOperator.operator} $#{result.params.length}"
 
-  @_getWhereOperatorHandler: (field) ->
+  @_getWhereOperator: (field) ->
     operators = {
       greaterOrEqualThanOperator: { operator: '>=' }
       greaterThanOperator: { operator: '>' }
@@ -122,20 +147,22 @@ class QueryGenerator
       result.where.push "#{configuration.table}.\"#{field}\" in (#{arrValues.join(', ')})"
 
   @_whereNullClause: (field, value, result, configuration) ->
-    fieldConfig = @_getFieldConfigurationOrDefault(configuration, field)
+    fieldConfig = @_getFieldConfigurationOrDefault configuration, field
     result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" is null" if value is null
 
   @_getFieldConfigurationOrDefault: (configuration, field) ->
-    if configuration.search[field]
-      relationName = configuration.search[field].relation
-      return {
-        table: configuration.relations[relationName].table
-        column: configuration.search[field].column
-      }
-    return {
+
+    fieldConfiguration =
       table: configuration.table
       column: field
-    }
+
+    if configuration.search[field]
+      relationName = configuration.search[field].relation
+      fieldConfiguration =
+        table: configuration.relations[relationName].table
+        column: configuration.search[field].column
+
+    fieldConfiguration
 
   @_toColumnSql: (configuration, relations = []) ->
     columns = configuration.columns.map (column) -> "#{column.name} \"#{column.alias}\""
