@@ -31,25 +31,25 @@ class QueryGenerator
 
   {
     table: 'tasks'
-    where: [
-      { search: 'customer_name', column: 'customers."name"' }
+    search: {
+      employee_name: {
+         relation: 'employee'
+         column: 'name'
+      }
+    }
+    columns: [
+        { name: 'id', alias: 'this.id' }
+        { name: 'description', alias: 'this.description' }
+        { name: 'created_at', alias: 'this.createdAt' }
+        { name: 'employee_id', alias: 'this.employee.id' }
     ]
-    select: {
-      columns: [
-          { name: 'id', alias: 'this.id' }
-          { name: 'description', alias: 'this.description' }
-          { name: 'created_at', alias: 'this.createdAt' }
-          { name: 'employee_id', alias: 'this.employee.id' }
-      ]
-      relations: {
-        employee: {
-          table: 'employees'
-          sql: 'LEFT JOIN employees ON tasks.employee_id = employees.id'
-          columns: [
-            { name: 'id', alias: 'this.employee.id' }
-            { name: 'name', alias: 'this.employee.name' }
-          ]
-        }
+    relations: {
+      employee: {
+        table: 'employees'
+        sql: 'LEFT JOIN employees ON tasks.employee_id = employees.id'
+        columns: [
+          { name: 'name', alias: 'this.employee.name' }
+        ]
       }
     }
   }
@@ -64,8 +64,10 @@ class QueryGenerator
                #{@_toJoinSql(configuration, relations)}"
     sqlText.trim()
 
-  @toWhere: (conditions) ->
+  @toWhere: (table, conditions) ->
     return { where: 'WHERE 1=1', params: [] } if _.isEmpty conditions
+    configuration = configurations[table]
+    return null if not configuration
 
     where = []
     params = []
@@ -79,9 +81,9 @@ class QueryGenerator
 
         includesNull = 'null' in value or null in value
         if includesNull
-          where.push "(#{field} in (#{arrValues.join(', ')}) OR #{field} is null)"
+          where.push "(#{configuration.table}.\"#{field}\" in (#{arrValues.join(', ')}) OR #{configuration.table}.\"#{field}\" is null)"
         else
-          where.push "#{field} in (#{arrValues.join(', ')})"
+          where.push "#{configuration.table}.\"#{field}\" in (#{arrValues.join(', ')})"
       else
 
         # { 'field'   : 1 } is equal to
@@ -93,21 +95,26 @@ class QueryGenerator
         if value
           if field.endsWith '>='
             params.push value
-            where.push "#{field.replace('>=', '')} >= $#{params.length}"
+            field = field.replace('>=', '')
+            where.push "#{configuration.table}.\"#{field}\" >= $#{params.length}"
           else if field.endsWith '>'
             params.push value
-            where.push "#{field.replace('>', '')} > $#{params.length}"
+            field = field.replace('>', '')
+            where.push "#{configuration.table}.\"#{field}\" > $#{params.length}"
+            #where.push "#{field} > $#{params.length}"
           else if field.endsWith '<='
             params.push value
-            where.push "#{field.replace('<=', '')} <= $#{params.length}"
+            field = field.replace('<=', '')
+            where.push "#{configuration.table}.\"#{field}\" <= $#{params.length}"
           else if field.endsWith '<'
             params.push value
-            where.push "#{field.replace('<', '')} < $#{params.length}"
+            field = field.replace('<', '')
+            where.push "#{configuration.table}.\"#{field}\" < $#{params.length}"
           else
             params.push value
-            where.push "#{field} = $#{params.length}"
+            where.push "#{configuration.table}.\"#{field}\" = $#{params.length}"
         else
-          where.push "#{field} is null" if value is null
+          where.push "#{configuration.table}.\"#{field}\" is null" if value is null
 
     result =
       where: "WHERE #{where.join ' AND '}"
