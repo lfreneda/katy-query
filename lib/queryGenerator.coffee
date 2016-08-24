@@ -70,9 +70,7 @@ class QueryGenerator
     configuration = configurations[table]
     return null if not configuration
 
-    result =
-      where: []
-      params: []
+    result = { where: [], params: [] }
 
     for own field, value of conditions
       if _.isArray value
@@ -89,8 +87,8 @@ class QueryGenerator
     operatorHandler = @_getWhereOperatorHandler field
     result.params.push value
     field = field.replace(operatorHandler.operator, '')
-    fieldConfig = @_getFieldConfigurationOrDefault(configuration, field)
-    result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" #{operatorHandler.operator} $#{result.params.length}"
+    field = @_getFieldConfigurationOrDefault(configuration, field)
+    result.where.push "#{field.table}.\"#{field.column}\" #{operatorHandler.operator} $#{result.params.length}"
 
   @_getWhereOperatorHandler: (field) ->
     operators = {
@@ -98,6 +96,7 @@ class QueryGenerator
       greaterThanOperator: { operator: '>' }
       lessOrEqualThanOperator: { operator: '<=' }
       lessThanOperator: { operator: '<' }
+      iLikeOperator: { operator: '~~*' }
       equalOperator: { operator: '=' }
     }
 
@@ -106,6 +105,7 @@ class QueryGenerator
       when field.endsWith '>' then operators.greaterThanOperator
       when field.endsWith '<=' then operators.lessOrEqualThanOperator
       when field.endsWith '<' then operators.lessThanOperator
+      when field.endsWith '~~*' then operators.iLikeOperator
       else operators.equalOperator
 
     operatorHandler

@@ -119,6 +119,16 @@ describe 'Query generator', ->
           ]
         }
 
+      it 'single ilike column of an relation condition (when configured), result should be as expected', ->
+        expect(QueryGenerator.toWhere('tasks', {
+          'employee_name~~*': 'Luiz Freneda'
+        })).to.deep.equal {
+          where: 'WHERE employees."name" ~~* $1'
+          params: [
+            'Luiz Freneda'
+          ]
+        }
+
       it 'single is null condition, result should be as expected', ->
         expect(QueryGenerator.toWhere('tasks', {
           employee_id: null
