@@ -97,7 +97,8 @@ class QueryGenerator
     result = { where: [], params: [] }
 
     if options?.tenant
-      result.where.push "(#{configuration.table}.\"#{options.tenant.column}\" = #{options.tenant.value})"
+      result.params.push options.tenant.value
+      result.where.push "(#{configuration.table}.\"#{options.tenant.column}\" = $#{result.params.length})"
 
     for own field, value of conditions
       if _.isArray value

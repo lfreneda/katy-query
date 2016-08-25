@@ -88,14 +88,14 @@ describe 'Query generator', ->
     describe 'tenant config', ->
       it 'when empty conditions and options tenant is provided and, should be the first where clause', ->
         expect(QueryGenerator.toWhere('tasks', {}, { tenant: { column: "account_id", value: 1 }})).to.deep.equal {
-          where: 'WHERE (tasks."account_id" = 1)'
-          params: []
+          where: 'WHERE (tasks."account_id" = $1)'
+          params: [1]
         }
 
       it 'when conditions and options tenant is provided and, should be the first where clause', ->
-        expect(QueryGenerator.toWhere('tasks', { employee_id: 1 }, { tenant: { column: "account_id", value: 1 }})).to.deep.equal {
-          where: 'WHERE (tasks."account_id" = 1) AND tasks."employee_id" = $1'
-          params: [1]
+        expect(QueryGenerator.toWhere('tasks', { employee_id: 2 }, { tenant: { column: "account_id", value: 1 }})).to.deep.equal {
+          where: 'WHERE (tasks."account_id" = $1) AND tasks."employee_id" = $2'
+          params: [1,2]
         }
 
     describe 'basic comparison', ->
@@ -347,13 +347,13 @@ describe 'Query generator', ->
             SELECT COUNT(distinct tasks."id")
             FROM tasks
               LEFT JOIN employees ON tasks.employee_id = employees.id
-            WHERE (tasks."account_id" = 1505)
-              AND tasks."employee_id" in ($1, $2, $3)
-              AND employees."name" = $4
+            WHERE (tasks."account_id" = $1)
+              AND tasks."employee_id" in ($2, $3, $4)
+              AND employees."name" = $5
               AND tasks."service_id" is null
-              AND (tasks."customer_id" in ($5) OR tasks."customer_id" is null)
-              AND tasks."created_at" > $6
-              AND tasks."updated_at" < $7
+              AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+              AND tasks."created_at" > $7
+              AND tasks."updated_at" < $8
         '
         sqlSelect: '
             SELECT
@@ -365,14 +365,14 @@ describe 'Query generator', ->
                 employees.name "this.employee.name"
             FROM tasks
               LEFT JOIN employees ON tasks.employee_id = employees.id
-            WHERE (tasks."account_id" = 1505)
-              AND tasks."employee_id" in ($1, $2, $3)
-              AND employees."name" = $4
+            WHERE (tasks."account_id" = $1)
+              AND tasks."employee_id" in ($2, $3, $4)
+              AND employees."name" = $5
               AND tasks."service_id" is null
-              AND (tasks."customer_id" in ($5) OR tasks."customer_id" is null)
-              AND tasks."created_at" > $6
-              AND tasks."updated_at" < $7
+              AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+              AND tasks."created_at" > $7
+              AND tasks."updated_at" < $8
             ORDER BY tasks."description" DESC OFFSET 15 LIMIT 28
         '
-        params: [ 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15' ]
+        params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15' ]
       }
