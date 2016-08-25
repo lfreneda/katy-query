@@ -34,8 +34,8 @@ QueryGenerator.configure({
       },
       tags: {
         table: 'tags'
-        sql: 'LEFT JOIN tasks_tags ON tasks_tags.taskId = tasks.id 
-              LEFT JOIN tags ON tasks_tags.tagId = tags.id'
+        sql: 'LEFT JOIN tasks_tags ON tasks_tags.taskId = tasks.id' +
+             'LEFT JOIN tags ON tasks_tags.tagId = tags.id'
         columns: [
           { name: 'id', alias: 'this.tags[].id' }
           { name: 'name', alias: 'this.tags[].name' }
