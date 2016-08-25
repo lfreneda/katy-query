@@ -38,6 +38,7 @@
   },
   "dependencies": {
     "lodash": "^4.15.0",
+    "search-query-parser": "0.0.4",
     "util": "^0.10.3"
   }
 }

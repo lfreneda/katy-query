@@ -1,41 +1,10 @@
 expect = require('chai').expect
 QueryGenerator = require './../lib/queryGenerator'
+QueryConfiguration = require './../lib/queryConfiguration'
 
 describe 'Query generator', ->
-  describe 'Configuration', ->
-    it 'reset configuration should set configurations to null', ->
-      QueryGenerator.configure({ foo: 'bar' })
-      QueryGenerator.resetConfiguration()
-      expect(QueryGenerator.getConfigurations()).to.null
-
-    it 'configure should add given configuration to configurations', ->
-      QueryGenerator.resetConfiguration()
-      QueryGenerator.configure({
-        table: 'tasks'
-        columns: [
-          { name: 'id', alias: 'this.id' }
-          { name: 'description', alias: 'this.description' }
-          { name: 'created_at', alias: 'this.createdAt' }
-          { name: 'employee_id', alias: 'this.employee.id' }
-        ]
-        relations: {
-          employee: {
-            table: 'employees'
-            sql: 'LEFT JOIN employees ON tasks.employee_id = employees.id'
-            columns: [
-              { name: 'id', alias: 'this.employee.id' }
-              { name: 'name', alias: 'this.employee.name' }
-            ]
-          }
-        }
-      })
-      expect(QueryGenerator.getConfigurations()).to.not.null
-
-    it.skip 'adding duplicated configuration, older should be override', -> #should pass
-    it.skip 'adding invalid configuration, should throws exception or warning', ->
-
   beforeEach ->
-    QueryGenerator.configure({
+    QueryConfiguration.configure({
       table: 'tasks'
       search: {
         employee_name: {
@@ -105,16 +74,29 @@ describe 'Query generator', ->
   describe 'Where sql clause generation', ->
     it.skip 'should [return null or throw err] when configuration for given table was not defined', ->
     it 'when conditions is null, result should be as expected', ->
-      expect(QueryGenerator.toWhere(null)).to.deep.equal {
+      expect(QueryGenerator.toWhere('tasks', null)).to.deep.equal {
         where: 'WHERE 1=1'
         params: []
       }
 
     it 'when conditions is empty, result should be as expected', ->
-      expect(QueryGenerator.toWhere({})).to.deep.equal {
+      expect(QueryGenerator.toWhere('tasks', {})).to.deep.equal {
         where: 'WHERE 1=1'
         params: []
       }
+
+    describe 'tenant config', ->
+      it 'when empty conditions and options tenant is provided and, should be the first where clause', ->
+        expect(QueryGenerator.toWhere('tasks', {}, { tenant: { column: "account_id", value: 1 }})).to.deep.equal {
+          where: 'WHERE (tasks."account_id" = 1)'
+          params: []
+        }
+
+      it 'when conditions and options tenant is provided and, should be the first where clause', ->
+        expect(QueryGenerator.toWhere('tasks', { employee_id: 1 }, { tenant: { column: "account_id", value: 1 }})).to.deep.equal {
+          where: 'WHERE (tasks."account_id" = 1) AND tasks."employee_id" = $1'
+          params: [1]
+        }
 
     describe 'basic comparison', ->
       it 'single equal condition, result should be as expected', ->
@@ -179,10 +161,10 @@ describe 'Query generator', ->
 
       it 'single greater than condition, result should be as expected', ->
         expect(QueryGenerator.toWhere('tasks', {
-          'employee_id>': 15
+          'employee_id>': 16
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" > $1'
-          params: [ 15 ]
+          params: [ 16 ]
         }
 
       it 'single greater than column of an relation condition, result should be as expected', ->
@@ -337,6 +319,7 @@ describe 'Query generator', ->
 
   describe 'Whole sql generation', ->
     it 'should generate a complete n executable sql text for the given input', ->
+
       result = QueryGenerator.toSql {
         table: 'tasks'
         relations: ['employee']
@@ -352,6 +335,10 @@ describe 'Query generator', ->
           sort: '-description',
           offset: 15,
           limit: 28
+          tenant: {
+            column: 'account_id'
+            value: 1505
+          }
         }
       }
 
@@ -360,8 +347,8 @@ describe 'Query generator', ->
             SELECT COUNT(distinct tasks."id")
             FROM tasks
               LEFT JOIN employees ON tasks.employee_id = employees.id
-            WHERE
-                  tasks."employee_id" in ($1, $2, $3)
+            WHERE (tasks."account_id" = 1505)
+              AND tasks."employee_id" in ($1, $2, $3)
               AND employees."name" = $4
               AND tasks."service_id" is null
               AND (tasks."customer_id" in ($5) OR tasks."customer_id" is null)
@@ -378,8 +365,8 @@ describe 'Query generator', ->
                 employees.name "this.employee.name"
             FROM tasks
               LEFT JOIN employees ON tasks.employee_id = employees.id
-            WHERE
-                  tasks."employee_id" in ($1, $2, $3)
+            WHERE (tasks."account_id" = 1505)
+              AND tasks."employee_id" in ($1, $2, $3)
               AND employees."name" = $4
               AND tasks."service_id" is null
               AND (tasks."customer_id" in ($5) OR tasks."customer_id" is null)

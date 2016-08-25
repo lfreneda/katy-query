@@ -1,6 +1,6 @@
-_ = require 'lodash'
+_    = require 'lodash'
 util = require 'util'
-configurations = null
+QueryConfiguration = require './queryConfiguration'
 
 `
 if (!String.prototype.endsWith) {
@@ -15,18 +15,7 @@ return lastIndex !== -1 && lastIndex === position;
 };
 }
 `
-
 class QueryGenerator
-
-  @resetConfiguration: ->
-    configurations = null
-
-  @getConfigurations: ->
-    configurations
-
-  @configure: (configuration) ->
-    configurations or= {}
-    configurations[configuration.table] = configuration
 
   ###
 
@@ -58,7 +47,7 @@ class QueryGenerator
   ###
 
   @toSql: (args) ->
-    whereResult = @toWhere args.table, args.where
+    whereResult = @toWhere(args.table, args.where, args.options)
     return {
       sqlCount: "#{@toSelectCount(args.table, args.relations)} #{whereResult.where}"
       sqlSelect: "#{@toSelect(args.table, args.relations)} #{whereResult.where} #{@toOptions(args.table, args.options)}"
@@ -66,23 +55,25 @@ class QueryGenerator
     }
 
   @toSelectCount: (table, relations = []) ->
-    configuration = configurations[table]
+    configuration = QueryConfiguration.getConfiguration(table)
     return null if not configuration
+
     sqlText = "SELECT COUNT(distinct #{configuration.table}.\"id\")
                  FROM #{configuration.table}
                  #{@_toJoinSql(configuration, relations)}"
     sqlText.trim()
 
   @toSelect: (table, relations = []) ->
-    configuration = configurations[table]
+    configuration = QueryConfiguration.getConfiguration(table)
     return null if not configuration
+
     sqlText = "SELECT #{@_toColumnSql(configuration, relations)}
                FROM #{configuration.table}
                #{@_toJoinSql(configuration, relations)}"
     sqlText.trim()
 
   @toOptions: (table, options) ->
-    configuration = configurations[table]
+    configuration = QueryConfiguration.getConfiguration(table)
     return null if not configuration
 
     offset = options.offset or 0
@@ -98,12 +89,15 @@ class QueryGenerator
     sqlText
 
 
-  @toWhere: (table, conditions) ->
-    return { where: 'WHERE 1=1', params: [] } if _.isEmpty conditions
-    configuration = configurations[table]
+  @toWhere: (table, conditions, options) ->
+    return { where: 'WHERE 1=1', params: [] } if _.isEmpty(conditions) and not options?.tenant
+    configuration = QueryConfiguration.getConfiguration(table)
     return null if not configuration
 
     result = { where: [], params: [] }
+
+    if options?.tenant
+      result.where.push "(#{configuration.table}.\"#{options.tenant.column}\" = #{options.tenant.value})"
 
     for own field, value of conditions
       if _.isArray value
@@ -158,17 +152,18 @@ class QueryGenerator
     fieldConfig = @_getFieldConfigurationOrDefault configuration, field
     result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" is null" if value is null
 
-  @_getFieldConfigurationOrDefault: (configuration, field) ->
+  @_getFieldConfigurationOrDefault: (configuration, field) -> # TODO should be tested separately
 
     fieldConfiguration =
       table: configuration.table
       column: field
 
-    if configuration.search[field]
-      relationName = configuration.search[field].relation
-      fieldConfiguration =
-        table: configuration.relations[relationName].table
-        column: configuration.search[field].column
+    searchConfig = configuration.search[field]
+    if searchConfig
+      fieldConfiguration.column = searchConfig.column if searchConfig.column
+      if searchConfig.relation
+        if configuration.relations[searchConfig.relation]
+          fieldConfiguration.table = configuration.relations[searchConfig.relation].table
 
     fieldConfiguration
 
