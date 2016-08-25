@@ -48,14 +48,17 @@ class QueryGenerator
 
   @toSql: (args) ->
     whereResult = @toWhere(args.table, args.where, args.options)
+    relations = _.uniq(whereResult.relations.concat(args.relations || []))
+
     return {
-      sqlCount: "#{@toSelectCount(args.table, args.relations)} #{whereResult.where}"
-      sqlSelect: "#{@toSelect(args.table, args.relations)} #{whereResult.where} #{@toOptions(args.table, args.options)}"
+      sqlCount: "#{@toSelectCount(args.table, relations)} #{whereResult.where}"
+      sqlSelect: "#{@toSelect(args.table, relations)} #{whereResult.where} #{@toOptions(args.table, args.options)}"
       params: whereResult.params
+      relations: whereResult.relations
     }
 
   @toSelectCount: (table, relations = []) ->
-    configuration = QueryConfiguration.getConfiguration(table)
+    configuration = QueryConfiguration.getConfiguration table
     return null if not configuration
 
     sqlText = "SELECT COUNT(distinct #{configuration.table}.\"id\")
@@ -64,7 +67,7 @@ class QueryGenerator
     sqlText.trim()
 
   @toSelect: (table, relations = []) ->
-    configuration = QueryConfiguration.getConfiguration(table)
+    configuration = QueryConfiguration.getConfiguration table
     return null if not configuration
 
     sqlText = "SELECT #{@_toColumnSql(configuration, relations)}
@@ -73,7 +76,7 @@ class QueryGenerator
     sqlText.trim()
 
   @toOptions: (table, options) ->
-    configuration = QueryConfiguration.getConfiguration(table)
+    configuration = QueryConfiguration.getConfiguration table
     return null if not configuration
 
     offset = options.offset or 0
@@ -90,11 +93,11 @@ class QueryGenerator
 
 
   @toWhere: (table, conditions, options) ->
-    return { where: 'WHERE 1=1', params: [] } if _.isEmpty(conditions) and not options?.tenant
-    configuration = QueryConfiguration.getConfiguration(table)
+    return { where: 'WHERE 1=1', params: [], relations: [] } if _.isEmpty(conditions) and not options?.tenant
+    configuration = QueryConfiguration.getConfiguration table
     return null if not configuration
 
-    result = { where: [], params: [] }
+    result = { where: [], params: [], relations: [] }
 
     if options?.tenant
       result.params.push options.tenant.value
@@ -109,13 +112,14 @@ class QueryGenerator
         @_whereOperatorClause field, value, result, configuration
 
     result.where = "WHERE #{result.where.join ' AND '}"
+    result.relations = _.uniq(result.relations)
     result
 
   @_whereOperatorClause: (field, value, result, configuration) ->
     fieldOperator = @_getWhereOperator field
     result.params.push value
     field = field.replace fieldOperator.operator, ''
-    field = @_getFieldConfigurationOrDefault configuration, field
+    field = @_getFieldConfigurationOrDefault configuration, field, result
     result.where.push "#{field.table}.\"#{field.column}\" #{fieldOperator.operator} $#{result.params.length}"
 
   @_getWhereOperator: (field) ->
@@ -150,10 +154,10 @@ class QueryGenerator
       result.where.push "#{configuration.table}.\"#{field}\" in (#{arrValues.join(', ')})"
 
   @_whereNullClause: (field, value, result, configuration) ->
-    fieldConfig = @_getFieldConfigurationOrDefault configuration, field
+    fieldConfig = @_getFieldConfigurationOrDefault configuration, field, result
     result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" is null" if value is null
 
-  @_getFieldConfigurationOrDefault: (configuration, field) -> # TODO should be tested separately
+  @_getFieldConfigurationOrDefault: (configuration, field, result) -> # TODO should be tested separately
 
     fieldConfiguration =
       table: configuration.table
@@ -164,6 +168,7 @@ class QueryGenerator
       fieldConfiguration.column = searchConfig.column if searchConfig.column
       if searchConfig.relation
         if configuration.relations[searchConfig.relation]
+          result.relations.push searchConfig.relation
           fieldConfiguration.table = configuration.relations[searchConfig.relation].table
 
     fieldConfiguration

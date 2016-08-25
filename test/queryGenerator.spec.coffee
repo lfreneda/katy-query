@@ -77,12 +77,14 @@ describe 'Query generator', ->
       expect(QueryGenerator.toWhere('tasks', null)).to.deep.equal {
         where: 'WHERE 1=1'
         params: []
+        relations: []
       }
 
     it 'when conditions is empty, result should be as expected', ->
       expect(QueryGenerator.toWhere('tasks', {})).to.deep.equal {
         where: 'WHERE 1=1'
         params: []
+        relations: []
       }
 
     describe 'tenant config', ->
@@ -90,12 +92,14 @@ describe 'Query generator', ->
         expect(QueryGenerator.toWhere('tasks', {}, { tenant: { column: "account_id", value: 1 }})).to.deep.equal {
           where: 'WHERE (tasks."account_id" = $1)'
           params: [1]
+          relations: []
         }
 
       it 'when conditions and options tenant is provided and, should be the first where clause', ->
         expect(QueryGenerator.toWhere('tasks', { employee_id: 2 }, { tenant: { column: "account_id", value: 1 }})).to.deep.equal {
           where: 'WHERE (tasks."account_id" = $1) AND tasks."employee_id" = $2'
           params: [1,2]
+          relations: []
         }
 
     describe 'basic comparison', ->
@@ -105,6 +109,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" = $1'
           params: [ 1 ]
+          relations: []
         }
 
       it 'single equal column of an relation condition (when configured), result should be as expected', ->
@@ -115,6 +120,7 @@ describe 'Query generator', ->
           params: [
             'Luiz Freneda'
           ]
+          relations: [ 'employee' ]
         }
 
       it 'single ilike column of an relation condition (when configured), result should be as expected', ->
@@ -125,6 +131,7 @@ describe 'Query generator', ->
           params: [
             'Luiz Freneda'
           ]
+          relations: [ 'employee' ]
         }
 
       it 'single is null condition, result should be as expected', ->
@@ -133,6 +140,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" is null'
           params: []
+          relations: []
         }
 
       it 'single is null column of an relation condition, result should be as expected', ->
@@ -141,6 +149,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE employees."name" is null'
           params: []
+          relations: [ 'employee' ]
         }
 
       it 'single greater or equal than condition, result should be as expected', ->
@@ -149,6 +158,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" >= $1'
           params: [ 15 ]
+          relations: []
         }
 
       it 'single greater or equal than column of an relation condition, result should be as expected', ->
@@ -157,6 +167,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE employees."name" >= $1'
           params: [ 15 ]
+          relations: [ 'employee' ]
         }
 
       it 'single greater than condition, result should be as expected', ->
@@ -165,6 +176,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" > $1'
           params: [ 16 ]
+          relations: []
         }
 
       it 'single greater than column of an relation condition, result should be as expected', ->
@@ -173,6 +185,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE employees."name" > $1'
           params: [ 159 ]
+          relations: [ 'employee' ]
         }
 
       it 'single less than condition, result should be as expected', ->
@@ -181,6 +194,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" < $1'
           params: [ 88 ]
+          relations: []
         }
 
       it 'single less than column of an relation condition, result should be as expected', ->
@@ -189,6 +203,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE employees."name" < $1'
           params: [ 34 ]
+          relations: [ 'employee' ]
         }
 
       it 'single less or equal than condition, result should be as expected', ->
@@ -197,6 +212,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" <= $1'
           params: [ 5 ]
+          relations: []
         }
 
       it 'single less than column of an relation condition, result should be as expected', ->
@@ -205,6 +221,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE employees."name" <= $1'
           params: [ 36 ]
+          relations: [ 'employee' ]
         }
 
       it 'multiples equal conditions, result should be as expected', ->
@@ -214,6 +231,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" = $1 AND tasks."description" = $2'
           params: [ 1, 'task description here' ]
+          relations: []
         }
 
     describe 'array comparison', ->
@@ -223,6 +241,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" in ($1, $2, $3)'
           params: [ 1, 3, 2 ]
+          relations: []
         }
 
       it 'single in conditions with null (as string) included, result should be as expected', ->
@@ -231,6 +250,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE (tasks."employee_id" in ($1, $2, $3) OR tasks."employee_id" is null)'
           params: [ 1, 3, 2 ]
+          relations: []
         }
 
       it 'single in conditions with null included, result should be as expected', ->
@@ -239,6 +259,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE (tasks."employee_id" in ($1, $2, $3) OR tasks."employee_id" is null)'
           params: [ 1, 3, 2 ]
+          relations: []
         }
 
       it 'multiples in condition, result should be as expected', ->
@@ -248,6 +269,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" in ($1, $2, $3) AND tasks."customer_id" in ($4, $5, $6)'
           params: [ 1, 3, 2, 9, 8, 7 ]
+          relations: []
         }
 
       it 'multiples in condition with null included, result should be as expected', ->
@@ -257,6 +279,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE (tasks."employee_id" in ($1, $2, $3) OR tasks."employee_id" is null) AND tasks."customer_id" in ($4, $5, $6)'
           params: [ 1, 3, 2, 9, 8, 7 ]
+          relations: []
         }
 
       it 'multiples in/equal condition, result should be as expected', ->
@@ -266,6 +289,7 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" in ($1, $2, $3) AND tasks."customer_id" = $4'
           params: [ 1, 3, 2, 9 ]
+          relations: []
         }
 
     describe 'pattern matching', ->
@@ -291,6 +315,7 @@ describe 'Query generator', ->
                     AND tasks."updated_at" < $7
           '
           params: [ 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15' ]
+          relations: [ 'employee' ]
         }
 
   describe 'Options sql generation', ->
@@ -375,4 +400,5 @@ describe 'Query generator', ->
             ORDER BY tasks."description" DESC OFFSET 15 LIMIT 28
         '
         params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15' ]
+        relations: [ 'employee' ]
       }
