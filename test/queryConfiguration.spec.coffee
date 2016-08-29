@@ -5,7 +5,7 @@ describe 'Configuration', ->
   it 'reset configuration should set configurations to null', ->
     QueryConfiguration.configure({ table: 'tasks' })
     QueryConfiguration.resetConfiguration()
-    expect(QueryConfiguration.getConfigurations()).to.null
+    expect(QueryConfiguration.getConfigurations()).to.deep.equal {}
 
   it 'configure should add given configuration to configurations', ->
     QueryConfiguration.resetConfiguration()

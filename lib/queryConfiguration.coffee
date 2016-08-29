@@ -1,8 +1,9 @@
-configurations = null
+configurations = {}
+mappers = {}
 
 class QueryConfiguration
   @resetConfiguration: ->
-    configurations = null
+    configurations = {}
 
   @getConfigurations: ->
     configurations
@@ -13,5 +14,12 @@ class QueryConfiguration
   @configure: (configuration) ->
     configurations or= {}
     configurations[configuration.table] = configuration
+
+  @addMapper: (name, map) ->
+    mappers or= {}
+    mappers[name] = map
+
+  @getMapper: (name) ->
+    mappers[name]
 
 module.exports = QueryConfiguration

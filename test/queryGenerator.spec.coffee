@@ -4,12 +4,21 @@ QueryConfiguration = require './../lib/queryConfiguration'
 
 describe 'Query generator', ->
   beforeEach ->
+
+    QueryConfiguration.addMapper 'fromNameToOrdinalStatusMapper', (value) ->
+      return 1 if value.trim().toLowerCase() == 'scheduled'
+      return 2 if value.trim().toLowerCase() == 'inprogress'
+      return 3 if value.trim().toLowerCase() == 'done'
+
     QueryConfiguration.configure({
       table: 'tasks'
       search: {
         employee_name: {
           relation: 'employee'
           column: 'name'
+        }
+        status: {
+          mapper: 'fromNameToOrdinalStatusMapper'
         }
       }
       columns: [
@@ -109,6 +118,15 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" = $1'
           params: [ 1 ]
+          relations: []
+        }
+
+      it 'single equal condition with mapper configured, result should be as expected', ->
+        expect(QueryGenerator.toWhere('tasks', {
+          status: 'done'
+        })).to.deep.equal {
+          where: 'WHERE tasks."status" = $1'
+          params: [3]
           relations: []
         }
 
@@ -241,6 +259,15 @@ describe 'Query generator', ->
         })).to.deep.equal {
           where: 'WHERE tasks."employee_id" in ($1, $2, $3)'
           params: [ 1, 3, 2 ]
+          relations: []
+        }
+
+      it 'single in condition with mapper configured, result should be as expected', ->
+        expect(QueryGenerator.toWhere('tasks', {
+          status: ['scheduled','inprogress']
+        })).to.deep.equal {
+          where: 'WHERE tasks."status" in ($1, $2)'
+          params: [ 1, 2 ]
           relations: []
         }
 

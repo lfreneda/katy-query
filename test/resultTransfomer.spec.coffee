@@ -1,5 +1,6 @@
 expect = require('chai').expect
 ResultTransfomer = require './../lib/resultTransformer'
+QueryConfiguration = require './../lib/queryConfiguration'
 
 recordSet =
   listResult:
@@ -14,12 +15,36 @@ recordSet =
     withToManyJoinResult: require './.data/recordset-with-single-result-to-many-inner-join.json'
 
 describe 'Result Transformer', ->
-  
+
+  beforeEach ->
+    QueryConfiguration.resetConfiguration()
+
   describe 'given a record set result in KatyQuery format', ->
     describe 'for single entity result', ->
+      describe 'when mapper is configured', ->
+
+        beforeEach ->
+          QueryConfiguration.configure({
+            table: 'tasks'
+            columns: [
+              { name: 'id', alias: 'this.id' }
+              { name: 'name', alias: 'this.name', mapper: 'taskNameMapper' }
+            ]
+          })
+
+        it 'value should be map as configured', ->
+          QueryConfiguration.addMapper 'taskNameMapper', (columnValue) ->
+            columnValue + ' mapped'
+
+          model = ResultTransfomer.toModel 'tasks', recordSet.singleResult.withNoJoinResultAsArray
+          expect(model).to.deep.equal {
+            id: 1
+            name: 'Task name mapped'
+          }
+
       describe 'as array with no joins', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModel recordSet.singleResult.withNoJoinResultAsArray
+          model = ResultTransfomer.toModel 'tasks', recordSet.singleResult.withNoJoinResultAsArray
           expect(model).to.deep.equal {
             id: 1
             name: 'Task name'
@@ -27,7 +52,7 @@ describe 'Result Transformer', ->
   
       describe 'as object with no joins', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModel recordSet.singleResult.withNoJoinResultAsObject
+          model = ResultTransfomer.toModel 'tasks', recordSet.singleResult.withNoJoinResultAsObject
           expect(model).to.deep.equal {
             id: 1
             name: 'Task name'
@@ -35,7 +60,7 @@ describe 'Result Transformer', ->
   
       describe 'as array with a `to one` inner join', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModel recordSet.singleResult.withToOneJoinResultAsArray
+          model = ResultTransfomer.toModel 'tasks', recordSet.singleResult.withToOneJoinResultAsArray
           expect(model).to.deep.equal {
             id: 1
             name: 'Task name'
@@ -46,7 +71,7 @@ describe 'Result Transformer', ->
   
       describe 'as object with a `to one` inner join', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModel recordSet.singleResult.withToOneJoinResultAsObject
+          model = ResultTransfomer.toModel 'tasks', recordSet.singleResult.withToOneJoinResultAsObject
           expect(model).to.deep.equal {
             id: 1
             name: 'Task name'
@@ -57,7 +82,7 @@ describe 'Result Transformer', ->
   
       describe 'with a `to many` inner join', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModel recordSet.singleResult.withToManyJoinResult
+          model = ResultTransfomer.toModel 'tasks', recordSet.singleResult.withToManyJoinResult
           expect(model).to.deep.equal {
             id: 1
             name: 'Task name'
@@ -73,7 +98,7 @@ describe 'Result Transformer', ->
     describe 'for list entity result', ->
       describe 'with no joins', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModels recordSet.listResult.withNoJoinResult
+          model = ResultTransfomer.toModels 'tasks', recordSet.listResult.withNoJoinResult
           expect(model).to.deep.equal [
             { id: 1, name: 'Task name 1' }
             { id: 2, name: 'Task name 2' }
@@ -82,7 +107,7 @@ describe 'Result Transformer', ->
   
       describe 'with a `to one` inner join', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModels recordSet.listResult.withToOneJoinResult
+          model = ResultTransfomer.toModels 'tasks', recordSet.listResult.withToOneJoinResult
           expect(model).to.deep.equal [
             {
               id: 1
@@ -103,7 +128,7 @@ describe 'Result Transformer', ->
   
       describe 'with a `to many` inner join', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModels recordSet.listResult.withToManyJoinResult
+          model = ResultTransfomer.toModels 'tasks', recordSet.listResult.withToManyJoinResult
           expect(model).to.deep.equal [
             {
               id: 1

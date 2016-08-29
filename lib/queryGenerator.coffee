@@ -117,9 +117,14 @@ class QueryGenerator
 
   @_whereOperatorClause: (field, value, result, configuration) ->
     fieldOperator = @_getWhereOperator field
-    result.params.push value
     field = field.replace fieldOperator.operator, ''
     field = @_getFieldConfigurationOrDefault configuration, field, result
+
+    if field.mapper
+      result.params.push field.mapper(value)
+    else
+      result.params.push value
+
     result.where.push "#{field.table}.\"#{field.column}\" #{fieldOperator.operator} $#{result.params.length}"
 
   @_getWhereOperator: (field) ->
@@ -144,8 +149,12 @@ class QueryGenerator
 
   @_whereClauseAsArray: (field, value, result, configuration) ->
     arrValues = []
+    fieldConfig = @_getFieldConfigurationOrDefault configuration, field, result
     for arrValue in value when arrValue not in ['null', null]
-      result.params.push arrValue
+      if fieldConfig.mapper
+        result.params.push fieldConfig.mapper(arrValue)
+      else
+        result.params.push arrValue
       arrValues.push "$#{result.params.length}"
     withNull = 'null' in value or null in value
     if withNull
@@ -162,10 +171,16 @@ class QueryGenerator
     fieldConfiguration =
       table: configuration.table
       column: field
+      mapper: null
+
 
     searchConfig = configuration.search[field]
     if searchConfig
       fieldConfiguration.column = searchConfig.column if searchConfig.column
+      if searchConfig.mapper
+        console.log searchConfig.mapper
+        mapper = QueryConfiguration.getMapper searchConfig.mapper
+        fieldConfiguration.mapper = mapper if mapper
       if searchConfig.relation
         if configuration.relations[searchConfig.relation]
           result.relations.push searchConfig.relation
