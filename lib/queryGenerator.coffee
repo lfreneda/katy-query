@@ -54,13 +54,13 @@ class QueryGenerator
       sqlCount: "#{@toSelectCount(args.table, relations)} #{whereResult.where}"
       sqlSelect: "#{@toSelect(args.table, relations)} #{whereResult.where} #{@toOptions(args.table, args.options)}"
       params: whereResult.params
-      relations: whereResult.relations
+      relations: relations
     }
 
   @toSelectCount: (table, relations = []) ->
     configuration = QueryConfiguration.getConfiguration table
     return null if not configuration
-
+    
     sqlText = "SELECT COUNT(distinct #{configuration.table}.\"id\")
                  FROM #{configuration.table}
                  #{@_toJoinSql(configuration, relations)}"
