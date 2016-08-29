@@ -51,20 +51,20 @@ describe 'Query generator', ->
       describe 'given simple query with no join', ->
         it 'sql should be as expected', ->
           expect(QueryGenerator.toSelect('tasks')).to.equal 'SELECT
-                id "this.id",
-                description "this.description",
-                created_at "this.createdAt",
-                employee_id "this.employee.id"
+                tasks."id" "this.id",
+                tasks."description" "this.description",
+                tasks."created_at" "this.createdAt",
+                tasks."employee_id" "this.employee.id"
             FROM tasks
           '
       describe 'given query with join', ->
         it.skip 'but relations requested was not configured, should be ignored', ->
         it 'sql should be as expected', ->
           expect(QueryGenerator.toSelect('tasks', ['employee'])).to.equal 'SELECT
-                  id "this.id",
-                  description "this.description",
-                  created_at "this.createdAt",
-                  employee_id "this.employee.id",
+                  tasks."id" "this.id",
+                  tasks."description" "this.description",
+                  tasks."created_at" "this.createdAt",
+                  tasks."employee_id" "this.employee.id",
                   employees.id "this.employee.id",
                   employees.name "this.employee.name"
               FROM tasks
@@ -359,7 +359,7 @@ describe 'Query generator', ->
         options:  {
           sort: '-description',
           offset: 15,
-          limit: 28
+          limit: 28,
           tenant: {
             column: 'account_id'
             value: 1505
@@ -382,10 +382,10 @@ describe 'Query generator', ->
         '
         sqlSelect: '
             SELECT
-                id "this.id",
-                description "this.description",
-                created_at "this.createdAt",
-                employee_id "this.employee.id",
+                tasks."id" "this.id",
+                tasks."description" "this.description",
+                tasks."created_at" "this.createdAt",
+                tasks."employee_id" "this.employee.id",
                 employees.id "this.employee.id",
                 employees.name "this.employee.name"
             FROM tasks

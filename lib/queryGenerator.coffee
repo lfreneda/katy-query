@@ -174,7 +174,7 @@ class QueryGenerator
     fieldConfiguration
 
   @_toColumnSql: (configuration, relations = []) ->
-    columns = configuration.columns.map (column) -> "#{column.name} \"#{column.alias}\""
+    columns = configuration.columns.map (column) -> "#{configuration.table}.\"#{column.name}\" \"#{column.alias}\""
     for relation in relations
       if configuration.relations[relation]
         relationTable = configuration.relations[relation].table
