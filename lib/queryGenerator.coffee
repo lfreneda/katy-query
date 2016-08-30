@@ -17,13 +17,13 @@ return lastIndex !== -1 && lastIndex === position;
 `
 class QueryGenerator
 
-  @toSql: (args) ->
-    whereResult = @toWhere(args.table, args.where, args.options)
+  @toSql: (args, config) ->
+    whereResult = @toWhere(args.where, config, args.options)
     relations = _.uniq(whereResult.relations.concat(args.relations || []))
 
     return {
-      sqlCount: "#{@toSelectCount(args.table, relations)} #{whereResult.where}"
-      sqlSelect: "#{@toSelect(args.table, relations)} #{whereResult.where} #{@toOptions(args.table, args.options)}"
+      sqlCount: "#{@toSelectCount(relations, config)} #{whereResult.where}"
+      sqlSelect: "#{@toSelect(relations, config)} #{whereResult.where} #{@toOptions(args.options, config)}"
       params: whereResult.params
       relations: relations
     }

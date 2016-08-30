@@ -371,10 +371,9 @@ describe 'Query generator', ->
         expect(optionsSql).to.equal 'ORDER BY tasks."name" DESC OFFSET 0 LIMIT 25'
 
   describe 'Whole sql generation', ->
-    it.skip 'should generate a complete n executable sql text for the given input', ->
+    it 'should generate a complete n executable sql text for the given input', ->
 
       result = QueryGenerator.toSql {
-        table: 'tasks'
         relations: ['employee']
         where: {
           employee_id: [1,3,2]
@@ -393,7 +392,7 @@ describe 'Query generator', ->
             value: 1505
           }
         }
-      }
+      }, config
 
       expect(result).to.deep.equal {
         sqlCount: '
