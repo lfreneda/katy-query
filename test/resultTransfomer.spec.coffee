@@ -59,7 +59,6 @@ describe 'Result Transformer', ->
           }
 
           model = ResultTransfomer.toModel recordSet.singleResult.withToOneJoinResultAsObject, config
-          console.log model
           expect(model).to.deep.equal {
             id: 1,
             name: 'Task name mapped',
