@@ -2,14 +2,13 @@ QueryConfiguration = require './queryConfiguration'
 searchQuery = require 'search-query-parser'
 
 class QuerySearchParser
-  @parse: (table, syntaxSearch) ->
-    searchConfig = QueryConfiguration.getConfiguration table
-    parseResult = searchQuery.parse syntaxSearch, @_toOptions(searchConfig)
+  @parse: (syntaxSearch, config) ->
+    parseResult = searchQuery.parse syntaxSearch, @_toOptions(config)
     delete parseResult.text # not matched text'd
     parseResult
 
-  @_toOptions: (searchConfig) ->
-    options = { keywords: (key for own key, value of searchConfig.search) }
+  @_toOptions: (config) ->
+    options = { keywords: (key for own key, value of config.search) }
     options
 
 module.exports = QuerySearchParser

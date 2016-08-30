@@ -17,35 +17,6 @@ return lastIndex !== -1 && lastIndex === position;
 `
 class QueryGenerator
 
-  ###
-
-  {
-    table: 'tasks'
-    search: {
-      employee_name: {
-         relation: 'employee'
-         column: 'name'
-      }
-    }
-    columns: [
-        { name: 'id', alias: 'this.id' }
-        { name: 'description', alias: 'this.description' }
-        { name: 'created_at', alias: 'this.createdAt' }
-        { name: 'employee_id', alias: 'this.employee.id' }
-    ]
-    relations: {
-      employee: {
-        table: 'employees'
-        sql: 'LEFT JOIN employees ON tasks.employee_id = employees.id'
-        columns: [
-          { name: 'name', alias: 'this.employee.name' }
-        ]
-      }
-    }
-  }
-
-  ###
-
   @toSql: (args) ->
     whereResult = @toWhere(args.table, args.where, args.options)
     relations = _.uniq(whereResult.relations.concat(args.relations || []))
@@ -57,59 +28,48 @@ class QueryGenerator
       relations: relations
     }
 
-  @toSelectCount: (table, relations = []) ->
-    configuration = QueryConfiguration.getConfiguration table
-    return null if not configuration
-    
-    sqlText = "SELECT COUNT(distinct #{configuration.table}.\"id\")
-                 FROM #{configuration.table}
-                 #{@_toJoinSql(configuration, relations)}"
+  @toSelectCount: (relations = [], config) ->
+    sqlText = "SELECT COUNT(distinct #{config.table}.\"id\")
+                 FROM #{config.table}
+                 #{@_toJoinSql(relations, config)}"
     sqlText.trim()
 
-  @toSelect: (table, relations = []) ->
-    configuration = QueryConfiguration.getConfiguration table
-    return null if not configuration
-
-    sqlText = "SELECT #{@_toColumnSql(configuration, relations)}
-               FROM #{configuration.table}
-               #{@_toJoinSql(configuration, relations)}"
+  @toSelect: (relations = [], config) ->
+    sqlText = "SELECT #{@_toColumnSql(relations, config)}
+               FROM #{config.table}
+               #{@_toJoinSql(relations, config)}"
     sqlText.trim()
 
-  @toOptions: (table, options) ->
-    configuration = QueryConfiguration.getConfiguration table
-    return null if not configuration
-
+  @toOptions: (options, config) ->
     offset = options.offset or 0
     limit = options.limit or 25
 
-    sort = "#{configuration.table}.\"id\" ASC"
+    sort = "#{config.table}.\"id\" ASC"
     if options.sort
       direction = if options.sort.indexOf('-') is 0 then 'DESC' else 'ASC'
       options.sort = options.sort.replace('-', '')
-      sort = "#{configuration.table}.\"#{options.sort}\" #{direction}"
+      sort = "#{config.table}.\"#{options.sort}\" #{direction}"
 
     sqlText = "ORDER BY #{sort} OFFSET #{offset} LIMIT #{limit}"
     sqlText
 
 
-  @toWhere: (table, conditions, options) ->
+  @toWhere: (conditions, config, options) ->
     return { where: 'WHERE 1=1', params: [], relations: [] } if _.isEmpty(conditions) and not options?.tenant
-    configuration = QueryConfiguration.getConfiguration table
-    return null if not configuration
 
     result = { where: [], params: [], relations: [] }
 
     if options?.tenant
       result.params.push options.tenant.value
-      result.where.push "(#{configuration.table}.\"#{options.tenant.column}\" = $#{result.params.length})"
+      result.where.push "(#{config.table}.\"#{options.tenant.column}\" = $#{result.params.length})"
 
     for own field, value of conditions
       if _.isArray value
-        @_whereClauseAsArray field, value, result, configuration
+        @_whereClauseAsArray field, value, result, config
       else if value is null
-        @_whereNullClause field, value, result, configuration
+        @_whereNullClause field, value, result, config
       else
-        @_whereOperatorClause field, value, result, configuration
+        @_whereOperatorClause field, value, result, config
 
     result.where = "WHERE #{result.where.join ' AND '}"
     result.relations = _.uniq(result.relations)
@@ -118,14 +78,9 @@ class QueryGenerator
   @_whereOperatorClause: (field, value, result, configuration) ->
     fieldOperator = @_getWhereOperator field
     field = field.replace fieldOperator.operator, ''
-    field = @_getFieldConfigurationOrDefault configuration, field, result
-
-    if field.mapper
-      result.params.push field.mapper(value)
-    else
-      result.params.push value
-
-    result.where.push "#{field.table}.\"#{field.column}\" #{fieldOperator.operator} $#{result.params.length}"
+    fieldConfig = @_getFieldConfigurationOrDefault configuration, field, result
+    result.params.push fieldConfig.mapper(value)
+    result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" #{fieldOperator.operator} $#{result.params.length}"
 
   @_getWhereOperator: (field) ->
     operators = {
@@ -151,10 +106,7 @@ class QueryGenerator
     arrValues = []
     fieldConfig = @_getFieldConfigurationOrDefault configuration, field, result
     for arrValue in value when arrValue not in ['null', null]
-      if fieldConfig.mapper
-        result.params.push fieldConfig.mapper(arrValue)
-      else
-        result.params.push arrValue
+      result.params.push fieldConfig.mapper(arrValue)
       arrValues.push "$#{result.params.length}"
     withNull = 'null' in value or null in value
     if withNull
@@ -166,29 +118,31 @@ class QueryGenerator
     fieldConfig = @_getFieldConfigurationOrDefault configuration, field, result
     result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" is null" if value is null
 
-  @_getFieldConfigurationOrDefault: (configuration, field, result) -> # TODO should be tested separately
+  @_getFieldConfigurationOrDefault: (config, field, result) -> # TODO should be tested separately
 
     fieldConfiguration =
-      table: configuration.table
+      table: config.table
       column: field
-      mapper: null
+      mapper: (value) -> value
 
-
-    searchConfig = configuration.search[field]
+    searchConfig = config.search[field]
     if searchConfig
       fieldConfiguration.column = searchConfig.column if searchConfig.column
+
       if searchConfig.mapper
-        console.log searchConfig.mapper
-        mapper = QueryConfiguration.getMapper searchConfig.mapper
-        fieldConfiguration.mapper = mapper if mapper
-      if searchConfig.relation
-        if configuration.relations[searchConfig.relation]
-          result.relations.push searchConfig.relation
-          fieldConfiguration.table = configuration.relations[searchConfig.relation].table
+        mapper = config.mappers[searchConfig.mapper]
+        if mapper
+          fieldConfiguration.mapper = mapper
+        else
+          console.log "### WARNING: mapper #{searchConfig.mapper} not found, it will be ignored."
+
+      if searchConfig.relation and config.relations[searchConfig.relation]
+        result.relations.push searchConfig.relation
+        fieldConfiguration.table = config.relations[searchConfig.relation].table
 
     fieldConfiguration
 
-  @_toColumnSql: (configuration, relations = []) ->
+  @_toColumnSql: (relations = [], configuration) ->
     columns = configuration.columns.map (column) -> "#{configuration.table}.\"#{column.name}\" \"#{column.alias}\""
     for relation in relations
       if configuration.relations[relation]
@@ -197,7 +151,7 @@ class QueryGenerator
         columns.push "#{relationTable}.#{column.name} \"#{column.alias}\"" for column in relationColumns
     columns.join ', '
 
-  @_toJoinSql:(configuration, relations = []) ->
+  @_toJoinSql:(relations = [], configuration) ->
     joinSqlText = ''
 
     ###

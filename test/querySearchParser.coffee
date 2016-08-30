@@ -3,8 +3,9 @@ QuerySearchParser = require './../lib/querySearchParser'
 QueryConfiguration = require './../lib/queryConfiguration'
 
 describe 'Query Search Parser', ->
+  config = null
   beforeEach ->
-    QueryConfiguration.configure({
+    config = {
       table: 'tasks'
       search: {
         employee_name: {
@@ -32,13 +33,13 @@ describe 'Query Search Parser', ->
           ]
         }
       }
-    })
+    }
 
   describe 'given query syntax', ->
 
     whereObject = null
     beforeEach ->
-      whereObject = QuerySearchParser.parse 'tasks', 'employee:1,2,null description~~*:"Something here" service_id:1'
+      whereObject = QuerySearchParser.parse 'employee:1,2,null description~~*:"Something here" service_id:1', config
 
     it 'not configured search terms should be ignored', ->
       expect(whereObject.service_id).to.be.undefined
