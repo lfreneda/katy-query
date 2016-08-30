@@ -1,6 +1,5 @@
 _    = require 'lodash'
 util = require 'util'
-QueryConfiguration = require './queryConfiguration'
 
 `
 if (!String.prototype.endsWith) {

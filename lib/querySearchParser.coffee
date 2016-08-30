@@ -1,4 +1,3 @@
-QueryConfiguration = require './queryConfiguration'
 searchQuery = require 'search-query-parser'
 
 class QuerySearchParser

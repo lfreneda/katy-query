@@ -1,5 +1,4 @@
 _ = require 'lodash'
-QueryConfiguration = require './queryConfiguration'
 
 class ResultTransformer
 

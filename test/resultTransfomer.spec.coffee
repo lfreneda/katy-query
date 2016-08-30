@@ -1,6 +1,5 @@
 expect = require('chai').expect
 ResultTransfomer = require './../lib/resultTransformer'
-QueryConfiguration = require './../lib/queryConfiguration'
 
 recordSet =
   listResult:
