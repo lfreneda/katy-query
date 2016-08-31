@@ -155,8 +155,7 @@ class QueryGenerator
         relationTable = relation.table
         relationColumns = relation.columns
         columns.push "#{relationTable}.\"#{column.name}\" \"#{column.alias}\"" for column in relationColumns
-
-    console.log columns
+        
     columns.join ', '
 
   @_toJoinSql:(relations = [], configuration) ->
