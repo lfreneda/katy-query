@@ -155,7 +155,7 @@ class QueryGenerator
         relationTable = relation.table
         relationColumns = relation.columns
         columns.push "#{relationTable}.\"#{column.name}\" \"#{column.alias}\"" for column in relationColumns
-        
+
     columns.join ', '
 
   @_toJoinSql:(relations = [], configuration) ->
@@ -171,10 +171,8 @@ class QueryGenerator
           for requiredRelationName in relation.requires
             requiredRelation = configuration.relations[requiredRelationName]
             joins.push requiredRelation.sql if requiredRelation
-      joins.push relation.sql
+        joins.push relation.sql
 
-    joins.join(' ')
-
-
+    _.uniq(joins).join ' '
 
 module.exports = QueryGenerator
