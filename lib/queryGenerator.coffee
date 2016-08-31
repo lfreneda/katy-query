@@ -149,9 +149,10 @@ class QueryGenerator
         if relation.requires
           for requiredRelationName in relation.requires
             requiredRelation = configuration.relations[requiredRelationName]
-            relationTable = requiredRelation.table
-            relationColumns = requiredRelation.columns
-            columns.push "#{relationTable}.\"#{column.name}\" \"#{column.alias}\"" for column in relationColumns
+            if requiredRelation
+              relationTable = requiredRelation.table
+              relationColumns = requiredRelation.columns
+              columns.push "#{relationTable}.\"#{column.name}\" \"#{column.alias}\"" for column in relationColumns
         relationTable = relation.table
         relationColumns = relation.columns
         columns.push "#{relationTable}.\"#{column.name}\" \"#{column.alias}\"" for column in relationColumns
