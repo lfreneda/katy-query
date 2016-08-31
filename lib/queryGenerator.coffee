@@ -144,21 +144,37 @@ class QueryGenerator
   @_toColumnSql: (relations = [], configuration) ->
     columns = configuration.columns.map (column) -> "#{configuration.table}.\"#{column.name}\" \"#{column.alias}\""
     for relation in relations
-      if configuration.relations[relation]
-        relationTable = configuration.relations[relation].table
-        relationColumns = configuration.relations[relation].columns
+      relation = configuration.relations[relation]
+      if relation
+        if relation.requires
+          for requiredRelationName in relation.requires
+            requiredRelation = configuration.relations[requiredRelationName]
+            relationTable = requiredRelation.table
+            relationColumns = requiredRelation.columns
+            columns.push "#{relationTable}.\"#{column.name}\" \"#{column.alias}\"" for column in relationColumns
+        relationTable = relation.table
+        relationColumns = relation.columns
         columns.push "#{relationTable}.\"#{column.name}\" \"#{column.alias}\"" for column in relationColumns
+
+    console.log columns
     columns.join ', '
 
   @_toJoinSql:(relations = [], configuration) ->
-    joinSqlText = ''
+    return '' if relations.length <= 0
 
-    if relations
-      for name in relations
-        relation = configuration.relations[name]
-        joinSqlText += relation.sql + ' ' if relation
+    joins = []
+    getRelationByName: (name) ->
 
-    joinSqlText.trim()
+    for relationName in relations
+      relation = configuration.relations[relationName]
+      if relation
+        if relation.requires
+          for requiredRelationName in relation.requires
+            requiredRelation = configuration.relations[requiredRelationName]
+            joins.push requiredRelation.sql if requiredRelation
+      joins.push relation.sql
+
+    joins.join(' ')
 
 
 

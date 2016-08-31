@@ -37,6 +37,15 @@ describe 'Query generator', ->
             { name: 'name', alias: 'this.employee.name' }
           ]
         }
+        'employee.account': {
+          requires: [ 'employee' ]
+          table: 'accounts'
+          sql: 'LEFT JOIN accounts ON accounts.id = employees.account_id'
+          columns: [
+            { name: 'id', alias: 'this.employee.account.id' }
+            { name: 'name', alias: 'this.employee.account.name' }
+          ]
+        }
       }
     }
 
@@ -80,6 +89,21 @@ describe 'Query generator', ->
               FROM tasks
               LEFT JOIN employees ON tasks.employee_id = employees.id
           '
+      describe 'given query with relations of relation (account requires employee to load)', ->
+        it 'sql should be as expected', ->
+          expect(QueryGenerator.toSelect(['employee.account'], config)).to.equal 'SELECT
+                    tasks."id" "this.id",
+                    tasks."description" "this.description",
+                    tasks."created_at" "this.createdAt",
+                    tasks."employee_id" "this.employee.id",
+                    employees."id" "this.employee.id",
+                    employees."name" "this.employee.name",
+                    accounts."id" "this.employee.account.id",
+                    accounts."name" "this.employee.account.name"
+                FROM tasks
+                LEFT JOIN employees ON tasks.employee_id = employees.id
+                LEFT JOIN accounts ON accounts.id = employees.account_id
+            '
 
   describe 'Where sql clause generation', ->
     it.skip 'should [return null or throw err] when configuration for given table was not defined', ->
