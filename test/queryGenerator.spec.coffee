@@ -75,8 +75,8 @@ describe 'Query generator', ->
                   tasks."description" "this.description",
                   tasks."created_at" "this.createdAt",
                   tasks."employee_id" "this.employee.id",
-                  employees.id "this.employee.id",
-                  employees.name "this.employee.name"
+                  employees."id" "this.employee.id",
+                  employees."name" "this.employee.name"
               FROM tasks
               LEFT JOIN employees ON tasks.employee_id = employees.id
           '
@@ -413,8 +413,8 @@ describe 'Query generator', ->
                 tasks."description" "this.description",
                 tasks."created_at" "this.createdAt",
                 tasks."employee_id" "this.employee.id",
-                employees.id "this.employee.id",
-                employees.name "this.employee.name"
+                employees."id" "this.employee.id",
+                employees."name" "this.employee.name"
             FROM tasks
               LEFT JOIN employees ON tasks.employee_id = employees.id
             WHERE (tasks."account_id" = $1)

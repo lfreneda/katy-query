@@ -147,18 +147,19 @@ class QueryGenerator
       if configuration.relations[relation]
         relationTable = configuration.relations[relation].table
         relationColumns = configuration.relations[relation].columns
-        columns.push "#{relationTable}.#{column.name} \"#{column.alias}\"" for column in relationColumns
+        columns.push "#{relationTable}.\"#{column.name}\" \"#{column.alias}\"" for column in relationColumns
     columns.join ', '
 
   @_toJoinSql:(relations = [], configuration) ->
     joinSqlText = ''
 
-    ###
-      TODO: if configuration.relations[relation] is undefined
-      when relation was not configured :S
-    ###
+    if relations
+      for name in relations
+        relation = configuration.relations[name]
+        joinSqlText += relation.sql + ' ' if relation
 
-    joinSqlText += configuration.relations[relation].sql for relation in relations if relations
-    joinSqlText
+    joinSqlText.trim()
+
+
 
 module.exports = QueryGenerator

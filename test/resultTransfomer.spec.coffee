@@ -15,9 +15,6 @@ recordSet =
 
 describe 'Result Transformer', ->
 
-  beforeEach ->
-    QueryConfiguration.resetConfiguration()
-
   describe 'given a record set result in KatyQuery format', ->
     describe 'for single entity result', ->
       describe 'when mapper is configured', ->
