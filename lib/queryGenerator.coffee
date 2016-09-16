@@ -158,7 +158,8 @@ class QueryGenerator
   @_getRelationRequiredChain: (configuration, relations, callback) ->
     for relationName in relations
       relation = configuration.relations[relationName]
-      @_getRelationRequiredChain(configuration, relation.requires, callback) if relation.requires
-      callback relation if relation
+      if relation
+        @_getRelationRequiredChain(configuration, relation.requires, callback) if relation.requires
+        callback relation
 
 module.exports = QueryGenerator
