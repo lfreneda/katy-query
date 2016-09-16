@@ -39,16 +39,16 @@ describe 'Query Search Parser', ->
 
     whereObject = null
     beforeEach ->
-      whereObject = QuerySearchParser.parse 'employee:1,2,null description~~*:"Something here*" service_id:1', config
+      whereObject = QuerySearchParser.parse 'employee:1,2,null description~~*:"*Something here*" service_id:1', config
 
     it 'not configured search terms should be ignored', ->
       expect(whereObject.service_id).to.be.undefined
 
     it 'should replace * char to %', ->
-      expect(whereObject['description~~*']).to.equal 'Something here%'
+      expect(whereObject['description~~*']).to.equal '%Something here%'
 
     it 'result should be as expected (only configured terms)', ->
       expect(whereObject).to.deep.equal {
         'employee': [ '1', '2', 'null' ]
-        'description~~*': 'Something here%'
+        'description~~*': '%Something here%'
       }

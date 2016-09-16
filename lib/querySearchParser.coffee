@@ -4,9 +4,9 @@ _    = require 'lodash'
 class QuerySearchParser
   @parse: (syntaxSearch, config) ->
     parseResult = searchQuery.parse syntaxSearch, @_toOptions(config)
-    delete parseResult.text 
+    delete parseResult.text
     for own key, value of parseResult
-      parseResult[key] = value.replace '*','%' if _.isString value
+      parseResult[key] = value.replace /\*/g,'%' if _.isString value
     parseResult
 
   @_toOptions: (config) ->
