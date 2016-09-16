@@ -109,9 +109,9 @@ class QueryGenerator
       arrValues.push "$#{result.params.length}"
     withNull = 'null' in value or null in value
     if withNull
-      result.where.push "(#{fieldConfig.table}.\"#{field}\" in (#{arrValues.join(', ')}) OR #{fieldConfig.table}.\"#{field}\" is null)"
+      result.where.push "(#{fieldConfig.table}.\"#{fieldConfig.column}\" in (#{arrValues.join(', ')}) OR #{fieldConfig.table}.\"#{fieldConfig.column}\" is null)"
     else
-      result.where.push "#{fieldConfig.table}.\"#{field}\" in (#{arrValues.join(', ')})"
+      result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" in (#{arrValues.join(', ')})"
 
   @_whereNullClause: (field, value, result, configuration) ->
     fieldConfig = @_getFieldConfigurationOrDefault configuration, field, result
