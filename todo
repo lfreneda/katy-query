@@ -1,2 +1,4 @@
 [ ] When joining two tables, correct space
 [ ] To options should be ignored instead default values ( where id = $1 queries )
+[ ] Test case for relation not found on select columns _toSelectColumn
+[ ] Test case for relation not found when joining
