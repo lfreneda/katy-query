@@ -142,38 +142,25 @@ class QueryGenerator
     fieldConfiguration
 
   @_toColumnSql: (relations = [], configuration) ->
-    columns = configuration.columns.map (column) -> "#{configuration.table}.\"#{column.name}\" \"#{column.alias}\""
-    for relation in relations
-      relation = configuration.relations[relation]
-      if relation
-        if relation.requires
-          for requiredRelationName in relation.requires
-            requiredRelation = configuration.relations[requiredRelationName]
-            if requiredRelation
-              relationTable = requiredRelation.table
-              relationColumns = requiredRelation.columns
-              columns.push "#{relationTable}.\"#{column.name}\" \"#{column.alias}\"" for column in relationColumns
-        relationTable = relation.table
-        relationColumns = relation.columns
-        columns.push "#{relationTable}.\"#{column.name}\" \"#{column.alias}\"" for column in relationColumns
+    columns = configuration.columns.map (column) -> "#{column.table || configuration.table}.\"#{column.name}\" \"#{column.alias}\""
+
+    @_getRelationRequiredChain configuration, relations, (relation) ->
+      relationTable = relation.table
+      relationColumns = relation.columns
+      columns.push "#{column.table || relationTable}.\"#{column.name}\" \"#{column.alias}\"" for column in relationColumns
 
     columns.join ', '
 
   @_toJoinSql:(relations = [], configuration) ->
     return '' if relations.length <= 0
-
     joins = []
-    getRelationByName: (name) ->
+    @_getRelationRequiredChain configuration, relations, (relation) -> joins.push relation.sql
+    _.uniq(joins).join ' '
 
+  @_getRelationRequiredChain: (configuration, relations, callback) ->
     for relationName in relations
       relation = configuration.relations[relationName]
-      if relation
-        if relation.requires
-          for requiredRelationName in relation.requires
-            requiredRelation = configuration.relations[requiredRelationName]
-            joins.push requiredRelation.sql if requiredRelation
-        joins.push relation.sql
-
-    _.uniq(joins).join ' '
+      @_getRelationRequiredChain(configuration, relation.requires, callback) if relation.requires
+      callback relation if relation
 
 module.exports = QueryGenerator
