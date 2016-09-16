@@ -145,11 +145,9 @@ class QueryGenerator
     columns = configuration.columns.map (column) -> "#{column.table || configuration.table}.\"#{column.name}\" \"#{column.alias}\""
 
     @_getRelationRequiredChain configuration, relations, (relation) ->
-      relationTable = relation.table
-      relationColumns = relation.columns
-      columns.push "#{column.table || relationTable}.\"#{column.name}\" \"#{column.alias}\"" for column in relationColumns
+      columns.push "#{column.table || relation.table}.\"#{column.name}\" \"#{column.alias}\"" for column in relation.columns
 
-    columns.join ', '
+    _.uniq(columns).join ', '
 
   @_toJoinSql:(relations = [], configuration) ->
     return '' if relations.length <= 0
