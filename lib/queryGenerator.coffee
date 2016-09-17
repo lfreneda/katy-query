@@ -65,7 +65,7 @@ class QueryGenerator
     for own field, value of conditions
       if _.isArray value
         @_whereClauseAsArray field, value, result, config
-      else if value is null
+      else if value is null or value is 'null'
         @_whereNullClause field, value, result, config
       else
         @_whereOperatorClause field, value, result, config
@@ -115,7 +115,8 @@ class QueryGenerator
 
   @_whereNullClause: (field, value, result, configuration) ->
     fieldConfig = @_getFieldConfigurationOrDefault configuration, field, result
-    result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" is null" if value is null
+    if value is null or value is 'null'
+      result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" is null"
 
   @_getFieldConfigurationOrDefault: (config, field, result) -> # TODO should be tested separately
 

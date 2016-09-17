@@ -174,6 +174,24 @@ describe 'Query generator', ->
           params: [ 1 ]
           relations: []
         }
+        
+      it 'single is null as null condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          employee_id: null
+        }, config)).to.deep.equal {
+          where: 'WHERE tasks."employee_id" is null'
+          params: []
+          relations: []
+        }
+
+      it 'single is null as string condition, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          employee_id: 'null'
+        }, config)).to.deep.equal {
+          where: 'WHERE tasks."employee_id" is null'
+          params: []
+          relations: []
+        }
 
       it 'single equal condition with mapper configured, result should be as expected', ->
         expect(QueryGenerator.toWhere({
