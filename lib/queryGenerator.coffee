@@ -40,16 +40,20 @@ class QueryGenerator
     sqlText.trim()
 
   @toOptions: (options, config) ->
-    offset = options.offset or 0
-    limit = options.limit or 25
-
     sort = "#{config.table}.\"id\" ASC"
     if options.sort
       direction = if options.sort.indexOf('-') is 0 then 'DESC' else 'ASC'
-      options.sort = options.sort.replace('-', '')
-      sort = "#{config.table}.\"#{options.sort}\" #{direction}"
+      field = options.sort.replace('-', '')
+      fieldConfig = @_getFieldConfigurationOrDefault config, field
+      sort = "#{fieldConfig.table}.\"#{fieldConfig.column}\" #{direction}"
 
-    sqlText = "ORDER BY #{sort} OFFSET #{offset} LIMIT #{limit}"
+    sqlText = "ORDER BY #{sort} "
+
+    offset = options.offset or 0
+    sqlText += "OFFSET #{offset} "
+
+    limit = options.limit or 25
+    sqlText += "LIMIT #{limit}"
     sqlText
 
 
@@ -137,7 +141,7 @@ class QueryGenerator
           console.log "### WARNING: mapper #{searchConfig.mapper} not found, it will be ignored."
 
       if searchConfig.relation and config.relations[searchConfig.relation]
-        result.relations.push searchConfig.relation
+        result.relations.push searchConfig.relation if result
         fieldConfiguration.table = config.relations[searchConfig.relation].table
 
     fieldConfiguration

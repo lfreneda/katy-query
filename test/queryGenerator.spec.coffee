@@ -441,6 +441,11 @@ describe 'Query generator', ->
         optionsSql = QueryGenerator.toOptions({ sort: '-name' }, config)
         expect(optionsSql).to.equal 'ORDER BY tasks."name" DESC OFFSET 0 LIMIT 25'
 
+      it 'when sort is provided as configured field, order by should be as expected', ->
+        optionsSql = QueryGenerator.toOptions({ sort: '-employee_name' }, config)
+        expect(optionsSql).to.equal 'ORDER BY employees."name" DESC OFFSET 0 LIMIT 25'
+
+
   describe 'Whole sql generation', ->
     it 'should generate a complete n executable sql text for the given input', ->
 
