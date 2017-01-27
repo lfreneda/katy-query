@@ -1,4 +1,5 @@
 _ = require 'lodash'
+ResultTransformerIndexHandler = require './resultTransformerIndexHandler'
 
 class ResultTransformer
 
@@ -15,14 +16,16 @@ class ResultTransformer
   @_distinctRootEntity: (rows, config) ->
 
     rootEntities = {}
+    resultTransformerIndexHandler = new ResultTransformerIndexHandler
     mappers = @_reduceMappers config
 
     for row, index in rows
       id = row['this.id']
       rootEntities[id] or= {}
       for own column, value of row
-        propertyPath = @_getPath column, index
+        propertyPath = @_getPath column, value, resultTransformerIndexHandler
         propertyValue = @_getValue column, value, mappers
+        console.log "#{propertyPath} = #{propertyValue}"
         _.set rootEntities[id], propertyPath, propertyValue
 
     results = (value for key, value of rootEntities)
@@ -35,9 +38,26 @@ class ResultTransformer
 
     results
 
-  @_getPath: (column, index) ->
-    path = column.replace 'this.', ''
-    path = path.replace '[]', "[#{index}]" if column.indexOf '[].' isnt -1
+  @_getPath: (column, value, resultTransformerIndexHandler) ->
+
+    path = column
+    resultTransformerIndexHandler.keep column, value
+
+    if column.indexOf '[]' isnt -1
+      result = resultTransformerIndexHandler.splitColumns column
+      if result.items and result.items.length > 0
+        result.items.forEach (item) ->
+          idValue = resultTransformerIndexHandler.getLastedValue item.idPath
+          # console.log 'idValue', idValue
+          index = resultTransformerIndexHandler.getBy item.idPath, idValue
+          # console.log 'index', index
+          replacePathWithValue = item.replacePath.replace '[]', "[#{index}]"
+          # console.log 'replacePathWithValue', replacePathWithValue
+          # console.log 'item.replacePath', item.replacePath
+          path = path.replace item.replacePath, replacePathWithValue
+          # console.log 'path', path
+
+    path = path.replace 'this.', ''
     path
 
   @_getValue: (alias, value, mappers) ->

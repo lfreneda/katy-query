@@ -12,6 +12,8 @@ recordSet =
     withToOneJoinResultAsArray: require './.data/recordset-with-single-result-to-one-inner-join-as-array.json'
     withToOneJoinResultAsObject: require './.data/recordset-with-single-result-to-one-inner-join-as-object.json'
     withToManyJoinResult: require './.data/recordset-with-single-result-to-many-inner-join.json'
+    withTwiceInnerJoinAsObject: require './.data/recordset-with-single-result-to-twice-inner-join-as-object.json'
+    withTwiceInnerJoinAsArray: require './.data/recordset-with-single-result-to-twice-inner-join-as-array.json'
 
 describe 'Result Transformer', ->
 
@@ -60,7 +62,6 @@ describe 'Result Transformer', ->
             name: 'Task name mapped',
             employee: { id: 2, name: 'Luiz Freneda mapped [2]'}
           }
-#          expect(model instanceof Task).to.be.true
 
       describe 'as array with no joins', ->
         it 'should bind as expected', ->
@@ -69,7 +70,7 @@ describe 'Result Transformer', ->
             id: 1
             name: 'Task name'
           }
-  
+
       describe 'as object with no joins', ->
         it 'should bind as expected', ->
           model = ResultTransfomer.toModel recordSet.singleResult.withNoJoinResultAsObject
@@ -77,7 +78,7 @@ describe 'Result Transformer', ->
             id: 1
             name: 'Task name'
           }
-  
+
       describe 'as array with a `to one` inner join', ->
         it 'should bind as expected', ->
           model = ResultTransfomer.toModel recordSet.singleResult.withToOneJoinResultAsArray
@@ -88,7 +89,7 @@ describe 'Result Transformer', ->
               id: 2
               name: 'Luiz Freneda'
           }
-  
+
       describe 'as object with a `to one` inner join', ->
         it 'should bind as expected', ->
           model = ResultTransfomer.toModel recordSet.singleResult.withToOneJoinResultAsObject
@@ -99,7 +100,7 @@ describe 'Result Transformer', ->
               id: 2
               name: 'Luiz Freneda'
           }
-  
+
       describe 'with a `to many` inner join', ->
         it 'should bind as expected', ->
           model = ResultTransfomer.toModel recordSet.singleResult.withToManyJoinResult
@@ -114,7 +115,53 @@ describe 'Result Transformer', ->
               { id: 4, name: 'query' }
             ]
           }
-  
+
+      describe 'with twice inner join', ->
+        it 'should bind as expected', ->
+          model = ResultTransfomer.toModel recordSet.singleResult.withTwiceInnerJoinAsObject, { mappers: [], columns: [] }
+          expect(model).to.deep.equal {
+            id: '528ad1ca-c889-46f0-b044-689e0986dab2'
+            name: 'Formulário'
+            questions: [
+              id: 'acf9af3f-f0ce-4ac9-93c2-c18e06d887ca'
+              type: 6
+              title: 'Qual alimento pode ser ser transformado em código?'
+              required: false
+              position: 7
+              options: [
+                id: 'a'
+                value: "Carne Completo"
+                position: 2
+              ]
+            ]
+          }
+        it 'should bind as expected', ->
+          model = ResultTransfomer.toModel recordSet.singleResult.withTwiceInnerJoinAsArray, { mappers: [], columns: [] }
+          console.log model
+          expect(model).to.deep.equal {
+            id: '528ad1ca-c889-46f0-b044-689e0986dab2'
+            name: 'Formulário'
+            questions: [
+              id: 'acf9af3f-f0ce-4ac9-93c2-c18e06d887ca'
+              type: 6
+              title: 'Qual alimento pode ser ser transformado em código?'
+              required: false
+              position: 7
+              options: [
+                {
+                  id: 'a'
+                  value: "Carne Completo"
+                  position: 1
+                }
+                {
+                  id: 'b'
+                  value: "Café"
+                  position: 2
+                }
+              ]
+            ]
+          }
+
     describe 'for list entity result', ->
       describe 'with no joins', ->
         it 'should bind as expected', ->
@@ -124,7 +171,7 @@ describe 'Result Transformer', ->
             { id: 2, name: 'Task name 2' }
             { id: 3, name: 'Task name 3' }
           ]
-  
+
       describe 'with a `to one` inner join', ->
         it 'should bind as expected', ->
           model = ResultTransfomer.toModels recordSet.listResult.withToOneJoinResult
@@ -144,8 +191,8 @@ describe 'Result Transformer', ->
                 name: 'Nicola Zagari'
             }
           ]
-  
-  
+
+
       describe 'with a `to many` inner join', ->
         it 'should bind as expected', ->
           model = ResultTransfomer.toModels recordSet.listResult.withToManyJoinResult
