@@ -25,7 +25,7 @@ class ResultTransformer
       for own column, value of row
         propertyPath = @_getPath column, value, resultTransformerIndexHandler
         propertyValue = @_getValue column, value, mappers
-        console.log "#{propertyPath} = #{propertyValue}"
+        # console.log "#{propertyPath} = #{propertyValue}"
         _.set rootEntities[id], propertyPath, propertyValue
 
     results = (value for key, value of rootEntities)

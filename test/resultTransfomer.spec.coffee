@@ -137,7 +137,6 @@ describe 'Result Transformer', ->
           }
         it 'should bind as expected', ->
           model = ResultTransfomer.toModel recordSet.singleResult.withTwiceInnerJoinAsArray, { mappers: [], columns: [] }
-          console.log model
           expect(model).to.deep.equal {
             id: '528ad1ca-c889-46f0-b044-689e0986dab2'
             name: 'Formulário'
