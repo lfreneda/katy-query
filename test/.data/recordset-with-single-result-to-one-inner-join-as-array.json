@@ -1,8 +1,0 @@
-[
-    {
-        "this.id": 1,
-        "this.name": "Task name",
-        "this.employee.id": 2,
-        "this.employee.name": "Luiz Freneda"
-    }
-]

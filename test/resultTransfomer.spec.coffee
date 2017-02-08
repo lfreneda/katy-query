@@ -1,19 +1,44 @@
 expect = require('chai').expect
 ResultTransfomer = require './../lib/resultTransformer'
 
-recordSet =
-  listResult:
-    withNoJoinResult: require './.data/recordset-with-list-result-no-joins.json'
-    withToOneJoinResult: require './.data/recordset-with-list-result-to-one-inner-join.json'
-    withToManyJoinResult: require './.data/recordset-with-list-result-to-many-inner-join.json'
-  singleResult:
-    withNoJoinResultAsArray: require './.data/recordset-with-single-result-no-joins-as-array.json'
-    withNoJoinResultAsObject: require './.data/recordset-with-single-result-no-joins-as-object.json'
-    withToOneJoinResultAsArray: require './.data/recordset-with-single-result-to-one-inner-join-as-array.json'
-    withToOneJoinResultAsObject: require './.data/recordset-with-single-result-to-one-inner-join-as-object.json'
-    withToManyJoinResult: require './.data/recordset-with-single-result-to-many-inner-join.json'
-    withTwiceInnerJoinAsObject: require './.data/recordset-with-single-result-to-twice-inner-join-as-object.json'
-    withTwiceInnerJoinAsArray: require './.data/recordset-with-single-result-to-twice-inner-join-as-array.json'
+config = {
+  table: 'tasks'
+  mapper: 'task_mapper'
+  mappers: {
+    'task_name_mapper': (name) -> name + ' mapped'
+    'employee_name_mapper': (name) -> name + ' mapped [2]'
+  }
+  collapse: {
+    options: {
+      tags: {
+        isArray: true
+      }
+      questions: {
+        isArray: true
+      }
+      options: {
+        isArray: true
+      }
+    }
+  }
+  columns: [
+    { name: 'id', alias: 'this.id' }
+    { name: 'name', alias: 'this.name', mapper: 'task_name_mapper' }
+  ],
+  relations: {
+    employee: {
+      columns: [
+        { name: 'name', alias: 'employee.name', mapper: 'employee_name_mapper' }
+      ]
+    }
+    tags: {
+      columns: [
+        { name: 'id', alias: 'tags.id' }
+        { name: 'name', alias: 'tags.name' }
+      ]
+    }
+  }
+}
 
 describe 'Result Transformer', ->
 
@@ -21,42 +46,13 @@ describe 'Result Transformer', ->
     describe 'for single entity result', ->
       describe 'when mapper is configured', ->
         it 'value should be map as configured', ->
-
-          class Task
-            constructor: (@id, @name) ->
-
-          config = {
-            table: 'tasks'
-            mapper: 'task_mapper'
-            mappers: {
-              'task_mapper': (model) ->
-                task = new Task(model.id, model.name)
-                task.employee = {
-                  id: model.employee.id
-                  name: model.employee.name
-                }
-                task
-              'task_name_mapper': (name) ->
-                name + ' mapped'
-              'employee_name_mapper': (name) ->
-                name + ' mapped [2]'
-            }
-            columns: [
-              { name: 'id', alias: 'this.id' }
-              { name: 'name', alias: 'this.name', mapper: 'task_name_mapper' }
-            ],
-            relations: {
-              employee: {
-                table: 'employees'
-                sql: 'LEFT JOIN employees ON tasks.employee_id = employees.id'
-                columns: [
-                  { name: 'name', alias: 'this.employee.name', mapper: 'employee_name_mapper' }
-                ]
-              }
-            }
-          }
-
-          model = ResultTransfomer.toModel recordSet.singleResult.withToOneJoinResultAsObject, config
+          model = ResultTransfomer.toModel {
+            "this.id": 1,
+            "this.name": "Task name",
+            "employee.id": 2,
+            "employee.name": "Luiz Freneda"
+          }, config
+          
           expect(model).to.deep.equal {
             id: 1,
             name: 'Task name mapped',
@@ -65,7 +61,13 @@ describe 'Result Transformer', ->
 
       describe 'as array with no joins', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModel recordSet.singleResult.withNoJoinResultAsArray
+          model = ResultTransfomer.toModel [
+            {
+              "this.id": 1,
+              "this.name": "Task name"
+            }
+          ]
+
           expect(model).to.deep.equal {
             id: 1
             name: 'Task name'
@@ -73,7 +75,10 @@ describe 'Result Transformer', ->
 
       describe 'as object with no joins', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModel recordSet.singleResult.withNoJoinResultAsObject
+          model = ResultTransfomer.toModel {
+            "this.id": 1,
+            "this.name": "Task name"
+          }
           expect(model).to.deep.equal {
             id: 1
             name: 'Task name'
@@ -81,7 +86,16 @@ describe 'Result Transformer', ->
 
       describe 'as array with a `to one` inner join', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModel recordSet.singleResult.withToOneJoinResultAsArray
+
+          model = ResultTransfomer.toModel [
+            {
+              "this.id": 1,
+              "this.name": "Task name",
+              "employee.id": 2,
+              "employee.name": "Luiz Freneda"
+            }
+          ]
+
           expect(model).to.deep.equal {
             id: 1
             name: 'Task name'
@@ -92,7 +106,14 @@ describe 'Result Transformer', ->
 
       describe 'as object with a `to one` inner join', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModel recordSet.singleResult.withToOneJoinResultAsObject
+         
+          model = ResultTransfomer.toModel {
+            "this.id": 1,
+            "this.name": "Task name",
+            "employee.id": 2,
+            "employee.name": "Luiz Freneda"
+          }
+          
           expect(model).to.deep.equal {
             id: 1
             name: 'Task name'
@@ -102,14 +123,38 @@ describe 'Result Transformer', ->
           }
 
       describe 'with a `to many` inner join', ->
+
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModel recordSet.singleResult.withToManyJoinResult
+
+          console.log config.collapse.options
+
+          model = ResultTransfomer.toModel [
+            {
+              "this.id": 1,
+              "this.name": "Task name",
+              "employee.id": 2,
+              "employee.name": "Luiz Freneda",
+              "tags.id": 3,
+              "tags.name": "katy"
+            },
+            {
+              "this.id": 1,
+              "this.name": "Task name",
+              "employee.id": 2,
+              "employee.name": "Luiz Freneda",
+              "tags.id": 4,
+              "tags.name": "query"
+            }
+          ], config
+
+          console.log JSON.stringify(model)
+
           expect(model).to.deep.equal {
             id: 1
-            name: 'Task name'
+            name: 'Task name mapped'
             employee:
               id: 2
-              name: 'Luiz Freneda'
+              name: 'Luiz Freneda mapped [2]'
             tags: [
               { id: 3, name: 'katy' }
               { id: 4, name: 'query' }
@@ -118,10 +163,24 @@ describe 'Result Transformer', ->
 
       describe 'with twice inner join', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModel recordSet.singleResult.withTwiceInnerJoinAsObject, { mappers: [], columns: [] }
+          model = ResultTransfomer.toModel {
+            "this.id": "528ad1ca-c889-46f0-b044-689e0986dab2",
+            "this.name": "Formulário",
+            "questions.id": "acf9af3f-f0ce-4ac9-93c2-c18e06d887ca",
+            "questions.type": 6,
+            "questions.title": "Qual alimento pode ser ser transformado em código?",
+            "questions.required": false,
+            "questions.position": 7,
+            "questions.options.id": "a",
+            "questions.options.value": "Carne Completo",
+            "questions.options.position": 2
+          }, config
+
+          console.log JSON.stringify(model)
+
           expect(model).to.deep.equal {
             id: '528ad1ca-c889-46f0-b044-689e0986dab2'
-            name: 'Formulário'
+            name: 'Formulário mapped'
             questions: [
               id: 'acf9af3f-f0ce-4ac9-93c2-c18e06d887ca'
               type: 6
@@ -135,11 +194,40 @@ describe 'Result Transformer', ->
               ]
             ]
           }
+
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModel recordSet.singleResult.withTwiceInnerJoinAsArray, { mappers: [], columns: [] }
+          model = ResultTransfomer.toModel [
+            {
+              "this.id": "528ad1ca-c889-46f0-b044-689e0986dab2",
+              "this.name": "Formulário",
+              "questions.id": "acf9af3f-f0ce-4ac9-93c2-c18e06d887ca",
+              "questions.type": 6,
+              "questions.title": "Qual alimento pode ser ser transformado em código?",
+              "questions.required": false,
+              "questions.position": 7,
+              "questions.options.id": "a",
+              "questions.options.value": "Carne Completo",
+              "questions.options.position": 1
+            },
+            {
+              "this.id": "528ad1ca-c889-46f0-b044-689e0986dab2",
+              "this.name": "Formulário",
+              "questions.id": "acf9af3f-f0ce-4ac9-93c2-c18e06d887ca",
+              "questions.type": 6,
+              "questions.title": "Qual alimento pode ser ser transformado em código?",
+              "questions.required": false,
+              "questions.position": 7,
+              "questions.options.id": "b",
+              "questions.options.value": "Café",
+              "questions.options.position": 2
+            }
+          ], config
+
+          console.log JSON.stringify(model, null, 2)
+
           expect(model).to.deep.equal {
             id: '528ad1ca-c889-46f0-b044-689e0986dab2'
-            name: 'Formulário'
+            name: 'Formulário mapped'
             questions: [
               id: 'acf9af3f-f0ce-4ac9-93c2-c18e06d887ca'
               type: 6
@@ -164,7 +252,21 @@ describe 'Result Transformer', ->
     describe 'for list entity result', ->
       describe 'with no joins', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModels recordSet.listResult.withNoJoinResult
+          model = ResultTransfomer.toModels [
+            {
+              "this.id": 1,
+              "this.name": "Task name 1"
+            },
+            {
+              "this.id": 2,
+              "this.name": "Task name 2"
+            },
+            {
+              "this.id": 3,
+              "this.name": "Task name 3"
+            }
+          ]
+
           expect(model).to.deep.equal [
             { id: 1, name: 'Task name 1' }
             { id: 2, name: 'Task name 2' }
@@ -173,7 +275,20 @@ describe 'Result Transformer', ->
 
       describe 'with a `to one` inner join', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModels recordSet.listResult.withToOneJoinResult
+          model = ResultTransfomer.toModels [
+            {
+              "this.id": 1,
+              "this.name": "Task name 1",
+              "employee.id": 3,
+              "employee.name": "Luiz Freneda"
+            },
+            {
+              "this.id": 2,
+              "this.name": "Task name 2",
+              "employee.id": 4,
+              "employee.name": "Nicola Zagari"
+            }
+          ]
           expect(model).to.deep.equal [
             {
               id: 1
@@ -194,14 +309,50 @@ describe 'Result Transformer', ->
 
       describe 'with a `to many` inner join', ->
         it 'should bind as expected', ->
-          model = ResultTransfomer.toModels recordSet.listResult.withToManyJoinResult
+          model = ResultTransfomer.toModels [
+            {
+              "this.id": 1,
+              "this.name": "Task name 1",
+              "employee.id": 3,
+              "employee.name": "Luiz Freneda",
+              "tags.id": 10,
+              "tags.name": "katy"
+            },
+            {
+              "this.id": 1,
+              "this.name": "Task name 1",
+              "employee.id": 3,
+              "employee.name": "Luiz Freneda",
+              "tags.id": 11,
+              "tags.name": "query"
+            },
+            {
+              "this.id": 2,
+              "this.name": "Task name 2",
+              "employee.id": 4,
+              "employee.name": "Nicola Zagari",
+              "tags.id": 11,
+              "tags.name": "query"
+            },
+            {
+              "this.id": 2,
+              "this.name": "Task name 2",
+              "employee.id": 4,
+              "employee.name": "Nicola Zagari",
+              "tags.id": 12,
+              "tags.name": "cto"
+            }
+          ], config
+
+          console.log JSON.stringify(model)
+
           expect(model).to.deep.equal [
             {
               id: 1
-              name: 'Task name 1'
+              name: 'Task name 1 mapped'
               employee:
                 id: 3
-                name: 'Luiz Freneda'
+                name: 'Luiz Freneda mapped [2]'
               tags: [
                 { id: 10, name: 'katy' }
                 { id: 11, name: 'query' }
@@ -209,10 +360,10 @@ describe 'Result Transformer', ->
             }
             {
               id: 2
-              name: 'Task name 2'
+              name: 'Task name 2 mapped'
               employee:
                 id: 4
-                name: 'Nicola Zagari'
+                name: 'Nicola Zagari mapped [2]'
               tags: [
                 { id: 11, name: 'query' }
                 { id: 12, name: 'cto' }

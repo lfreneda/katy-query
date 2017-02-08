@@ -1,5 +1,5 @@
 _ = require 'lodash'
-ResultTransformerIndexHandler = require './resultTransformerIndexHandler'
+collapse = require './util/collapse'
 
 class ResultTransformer
 
@@ -14,56 +14,19 @@ class ResultTransformer
     return null
 
   @_distinctRootEntity: (rows, config) ->
+    rows = @_applyMappers rows, config
+    config = config || {}
+    config.collapse = config.collapse || {}
+    rows = collapse 'this', 'id', (config.collapse.options || {}), rows
+    rows
 
-    rootEntities = {}
-    resultTransformerIndexHandler = new ResultTransformerIndexHandler
+  @_applyMappers: (rows, config) ->
     mappers = @_reduceMappers config
-
-    for row, index in rows
-      id = row['this.id']
-      rootEntities[id] or= {}
-      for own column, value of row
-        propertyPath = @_getPath column, value, resultTransformerIndexHandler
-        propertyValue = @_getValue column, value, mappers
-        # console.log "#{propertyPath} = #{propertyValue}"
-        _.set rootEntities[id], propertyPath, propertyValue
-
-    results = (value for key, value of rootEntities)
-    for result in results
-      result[property] = (_.filter value, (i) -> i) for own property, value of result when _.isArray value
-
-    if config and config.mapper and mappers[config.mapper]
-      rootMapper = mappers[config.mapper]
-      results = (rootMapper(result) for result in results)
-
-    results
-
-  @_getPath: (column, value, resultTransformerIndexHandler) ->
-
-    path = column
-    resultTransformerIndexHandler.keep column, value
-
-    if column.indexOf '[]' isnt -1
-      result = resultTransformerIndexHandler.splitColumns column
-      if result.items and result.items.length > 0
-        result.items.forEach (item) ->
-          idValue = resultTransformerIndexHandler.getLastedValue item.idPath
-          # console.log 'idValue', idValue
-          index = resultTransformerIndexHandler.getBy item.idPath, idValue
-          # console.log 'index', index
-          replacePathWithValue = item.replacePath.replace '[]', "[#{index}]"
-          # console.log 'replacePathWithValue', replacePathWithValue
-          # console.log 'item.replacePath', item.replacePath
-          path = path.replace item.replacePath, replacePathWithValue
-          # console.log 'path', path
-
-    path = path.replace 'this.', ''
-    path
-
-  @_getValue: (alias, value, mappers) ->
-    return value if not mappers
-    return value if not mappers[alias]
-    return mappers[alias](value)
+    if mappers
+      for row in rows
+        for alias, value of row
+          if mappers[alias] then row[alias] = mappers[alias](value) else row[alias] = value
+    rows
 
   @_reduceMappers: (config) ->
     return null if not config
