@@ -19,6 +19,9 @@ config = {
       options: {
         isArray: true
       }
+      labels: {
+        isArray: true
+      }
     }
   }
   columns: [
@@ -41,6 +44,100 @@ config = {
 }
 
 describe 'Result Transformer', ->
+
+  describe 'real case use', ->
+    it 'should returns as expected', ->
+
+      data = [
+        {
+          "this.id":1,
+          "account.id":1,
+          "this.name":"Eduardo Luiz",
+          "contact.email":"eduardoluizsantos@gmail.com",
+          "contact.phone":"11965874523",
+          "this.notes":null,
+          "this.archived":false,
+          "address.zipCode":"05422010",
+          "address.street":"Rua dos Pinheiros",
+          "address.number":"383",
+          "address.complement":null,
+          "address.neighborhood":null,
+          "address.city":"Sao Paulo",
+          "address.state":"Sao Paulo",
+          "address.coords.latitude":"1",
+          "address.coords.longitude":"2",
+          "labels.id":"297726d0-301d-4de6-b9a4-e439b81f44ba",
+          "labels.name":"Contrato",
+          "labels.color":"yellow",
+          "labels.type":1
+        },
+        {
+          "this.id":1,
+          "account.id":1,
+          "this.name":"Eduardo Luiz",
+          "contact.email":"eduardoluizsantos@gmail.com",
+          "contact.phone":"11965874523",
+          "this.notes":null,
+          "this.archived":false,
+          "address.zipCode":"05422010",
+          "address.street":"Rua dos Pinheiros",
+          "address.number":"383",
+          "address.complement":null,
+          "address.neighborhood":null,
+          "address.city":"Sao Paulo",
+          "address.state":"Sao Paulo",
+          "address.coords.latitude":"1",
+          "address.coords.longitude":"2",
+          "labels.id":"1db6e07f-91e2-42fb-b65c-9a364b6bad4c",
+          "labels.name":"Particular",
+          "labels.color":"purple",
+          "labels.type":1
+        }
+      ]
+
+      model = ResultTransfomer.toModel data, config
+      console.log(JSON.stringify(model,null,2))
+
+      expect(model).to.deep.equal {
+        "id":1,
+        "account":{
+          "id":1
+        },
+        "name":"Eduardo Luiz mapped",
+        "contact":{
+          "email":"eduardoluizsantos@gmail.com",
+          "phone":"11965874523"
+        },
+        "notes":null,
+        "archived":false,
+        "address":{
+          "zipCode":"05422010",
+          "street":"Rua dos Pinheiros",
+          "number":"383",
+          "complement":null,
+          "neighborhood":null,
+          "city":"Sao Paulo",
+          "state":"Sao Paulo",
+          "coords":{
+            "latitude":"1",
+            "longitude":"2"
+          }
+        },
+        "labels":[
+          {
+            "id":"297726d0-301d-4de6-b9a4-e439b81f44ba",
+            "name":"Contrato",
+            "color":"yellow",
+            "type":1
+          },
+          {
+            "id":"1db6e07f-91e2-42fb-b65c-9a364b6bad4c",
+            "name":"Particular",
+            "color":"purple",
+            "type":1
+          }
+        ]
+      }
 
   describe 'given a record set result in KatyQuery format', ->
     describe 'for single entity result', ->
