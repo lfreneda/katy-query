@@ -1,5 +1,5 @@
 _ = require 'lodash'
-collapse = require './util/collapse'
+rowsMapper = require('join-js').default
 
 class ResultTransformer
 
@@ -14,18 +14,23 @@ class ResultTransformer
     return null
 
   @_distinctRootEntity: (rows, config) ->
-    rows = @_applyMappers rows, config
-    config = config || {}
-    config.collapse = config.collapse || {}
-    rows = collapse 'this', 'id', (config.collapse.options || {}), rows
-    rows
-
-  @_applyMappers: (rows, config) ->
     mappers = @_reduceMappers config
+    rows = @_applyMappers rows, mappers
+
+    collapse = config.collapse || {}
+    results = rowsMapper.map rows, collapse.resultMaps, collapse.mapId, collapse.columnPrefix
+
+    if config and config.mapper and mappers[config.mapper]
+      rootMapper = mappers[config.mapper]
+      results = (rootMapper(result) for result in results)
+
+    results
+
+  @_applyMappers: (rows, mappers) ->
     if mappers
       for row in rows
         for alias, value of row
-          if mappers[alias] then row[alias] = mappers[alias](value) else row[alias] = value
+          row[alias] = mappers[alias](value) if mappers[alias]
     rows
 
   @_reduceMappers: (config) ->
