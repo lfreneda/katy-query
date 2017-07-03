@@ -1,6 +1,5 @@
 expect = require('chai').expect
 QuerySearchParser = require './../lib/querySearchParser'
-QueryConfiguration = require './../lib/queryConfiguration'
 
 describe 'Query Search Parser', ->
   config = null

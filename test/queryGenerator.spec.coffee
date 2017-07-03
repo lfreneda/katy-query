@@ -1,6 +1,5 @@
 expect = require('chai').expect
 QueryGenerator = require './../lib/queryGenerator'
-QueryConfiguration = require './../lib/queryConfiguration'
 
 describe 'Query generator', ->
   config = null
@@ -135,6 +134,7 @@ describe 'Query generator', ->
               '
 
   describe 'Where sql clause generation', ->
+
     it.skip 'should [return null or throw err] when configuration for given table was not defined', ->
     it 'when conditions is null, result should be as expected', ->
       expect(QueryGenerator.toWhere(null, config)).to.deep.equal {
@@ -151,17 +151,32 @@ describe 'Query generator', ->
       }
 
     describe 'tenant config', ->
-      it 'when empty conditions and options tenant is provided and, should be the first where clause', ->
+
+      it 'when empty conditions and options tenant is provided, should be the first where clause', ->
         expect(QueryGenerator.toWhere({}, config, { tenant: { column: "account_id", value: 1 }})).to.deep.equal {
           where: 'WHERE (tasks."account_id" = $1)'
           params: [1]
           relations: []
         }
 
-      it 'when conditions and options tenant is provided and, should be the first where clause', ->
+      it 'when empty conditions and options tenant as array is provided, should be the first where clause', ->
+        expect(QueryGenerator.toWhere({}, config, { tenant: { column: "account_id", value: [1,2,3] }})).to.deep.equal {
+          where: 'WHERE (tasks."account_id" in ($1, $2, $3))'
+          params: [1,2,3]
+          relations: []
+        }
+
+      it 'when conditions and options tenant are provided, should be the first where clause', ->
         expect(QueryGenerator.toWhere({ employee_id: 2 }, config, { tenant: { column: "account_id", value: 1 }})).to.deep.equal {
           where: 'WHERE (tasks."account_id" = $1) AND tasks."employee_id" = $2'
           params: [1,2]
+          relations: []
+        }
+
+      it 'when conditions and options tenant as array are provided, should be the first where clause', ->
+        expect(QueryGenerator.toWhere({ employee_id: 2 }, config, { tenant: { column: "account_id", value: [1,2,3] }})).to.deep.equal {
+          where: 'WHERE (tasks."account_id" in ($1, $2, $3)) AND tasks."employee_id" = $4'
+          params: [1,2,3,2]
           relations: []
         }
 
@@ -393,6 +408,7 @@ describe 'Query generator', ->
 
     describe 'pattern matching', ->
       it.skip 'tbd', ->
+
     describe 'regex', ->
       it.skip 'tbd', ->
 
@@ -444,7 +460,6 @@ describe 'Query generator', ->
       it 'when sort is provided as configured field, order by should be as expected', ->
         optionsSql = QueryGenerator.toOptions({ sort: '-employee_name' }, config)
         expect(optionsSql).to.equal 'ORDER BY employees."name" DESC OFFSET 0 LIMIT 25'
-
 
   describe 'Whole sql generation', ->
     it 'should generate a complete n executable sql text for the given input', ->

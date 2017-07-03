@@ -58,13 +58,22 @@ class QueryGenerator
 
 
   @toWhere: (conditions, config, options) ->
-    return { where: 'WHERE 1=1', params: [], relations: [] } if _.isEmpty(conditions) and not options?.tenant
+
+    if _.isEmpty(conditions) and not options?.tenant
+      return { where: 'WHERE 1=1', params: [], relations: [] }
 
     result = { where: [], params: [], relations: [] }
 
     if options?.tenant
-      result.params.push options.tenant.value
-      result.where.push "(#{config.table}.\"#{options.tenant.column}\" = $#{result.params.length})"
+      if _.isArray options.tenant.value
+        tenantValues = []
+        for tenantValue in options.tenant.value
+          result.params.push tenantValue
+          tenantValues.push "$#{result.params.length}"
+        result.where.push "(#{config.table}.\"#{options.tenant.column}\" in (#{tenantValues.join(', ')}))"
+      else
+        result.params.push options.tenant.value
+        result.where.push "(#{config.table}.\"#{options.tenant.column}\" = $#{result.params.length})"
 
     for own field, value of conditions
       if _.isArray value

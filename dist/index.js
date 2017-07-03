@@ -10,6 +10,7 @@
 
   module.exports = {
     ResultTransfomer: ResultTransformer,
+    ResultTransformer: ResultTransformer,
     QueryGenerator: QueryGenerator,
     QuerySearchParser: QuerySearchParser
   };

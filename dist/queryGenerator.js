@@ -73,7 +73,7 @@ return lastIndex !== -1 && lastIndex === position;
     };
 
     QueryGenerator.toWhere = function(conditions, config, options) {
-      var field, result, value;
+      var field, i, len, ref, result, tenantValue, tenantValues, value;
       if (_.isEmpty(conditions) && !(options != null ? options.tenant : void 0)) {
         return {
           where: 'WHERE 1=1',
@@ -87,8 +87,19 @@ return lastIndex !== -1 && lastIndex === position;
         relations: []
       };
       if (options != null ? options.tenant : void 0) {
-        result.params.push(options.tenant.value);
-        result.where.push("(" + config.table + ".\"" + options.tenant.column + "\" = $" + result.params.length + ")");
+        if (_.isArray(options.tenant.value)) {
+          tenantValues = [];
+          ref = options.tenant.value;
+          for (i = 0, len = ref.length; i < len; i++) {
+            tenantValue = ref[i];
+            result.params.push(tenantValue);
+            tenantValues.push("$" + result.params.length);
+          }
+          result.where.push("(" + config.table + ".\"" + options.tenant.column + "\" in (" + (tenantValues.join(', ')) + "))");
+        } else {
+          result.params.push(options.tenant.value);
+          result.where.push("(" + config.table + ".\"" + options.tenant.column + "\" = $" + result.params.length + ")");
+        }
       }
       for (field in conditions) {
         if (!hasProp.call(conditions, field)) continue;
