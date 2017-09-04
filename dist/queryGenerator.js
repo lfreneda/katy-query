@@ -118,12 +118,16 @@ return lastIndex !== -1 && lastIndex === position;
     };
 
     QueryGenerator._whereOperatorClause = function(field, value, result, configuration) {
-      var fieldConfig, fieldOperator;
+      var columnName, fieldConfig, fieldOperator;
       fieldOperator = this._getWhereOperator(field);
       field = field.replace(fieldOperator.operator, '');
       fieldConfig = this._getFieldConfigurationOrDefault(configuration, field, result);
       result.params.push(fieldConfig.mapper(value));
-      return result.where.push(fieldConfig.table + ".\"" + fieldConfig.column + "\" " + fieldOperator.operator + " $" + result.params.length);
+      columnName = fieldConfig.table + ".\"" + fieldConfig.column + "\"";
+      if (fieldConfig.format) {
+        columnName = fieldConfig.format.replace('{{column}}', columnName);
+      }
+      return result.where.push(columnName + " " + fieldOperator.operator + " $" + result.params.length);
     };
 
     QueryGenerator._getWhereOperator = function(field) {
@@ -208,6 +212,9 @@ return lastIndex !== -1 && lastIndex === position;
       if (searchConfig) {
         if (searchConfig.column) {
           fieldConfiguration.column = searchConfig.column;
+        }
+        if (searchConfig.format) {
+          fieldConfiguration.format = searchConfig.format;
         }
         if (searchConfig.mapper) {
           mapper = config.mappers[searchConfig.mapper];

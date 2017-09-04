@@ -1,9 +1,10 @@
 {
   "name": "katy-query",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "KatyQuery :microphone: is a Node.js 'n postgreSQL utility library",
   "main": "dist/index.js",
   "scripts": {
+    "compile": "coffee --output dist --compile lib",
     "test": "mocha",
     "autotest": "./node_modules/.bin/supervisor -q -n exit -x npm test"
   },

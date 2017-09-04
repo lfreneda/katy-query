@@ -20,6 +20,11 @@ describe 'Query generator', ->
         status: {
           mapper: 'fromNameToOrdinalStatusMapper'
         }
+        hired_at: {
+          relation: 'employee'
+          column: 'hired_at'
+          format: '({{column}} at time zone \'utc\') at time zone \'America/Sao_Paulo\''
+        }
       }
       columns: [
         { name: 'id', alias: 'this.id' }
@@ -34,6 +39,7 @@ describe 'Query generator', ->
           columns: [
             { name: 'id', alias: 'this.employee.id' }
             { name: 'name', alias: 'this.employee.name' }
+            { name: 'hired_at', alias: 'this.employee.hiredAt' }
           ]
         }
         'employee.account': {
@@ -93,7 +99,8 @@ describe 'Query generator', ->
                   tasks."created_at" "this.createdAt",
                   tasks."employee_id" "this.employee.id",
                   employees."id" "this.employee.id",
-                  employees."name" "this.employee.name"
+                  employees."name" "this.employee.name",
+                  employees."hired_at" "this.employee.hiredAt"
               FROM tasks
               LEFT JOIN employees ON tasks.employee_id = employees.id
           '
@@ -107,6 +114,7 @@ describe 'Query generator', ->
                         tasks."employee_id" "this.employee.id",
                         employees."id" "this.employee.id",
                         employees."name" "this.employee.name",
+                        employees."hired_at" "this.employee.hiredAt",
                         accounts."id" "this.employee.account.id",
                         accounts."name" "this.employee.account.name",
                         accounts_tags."id" "this.employee.account.tags[].id",
@@ -126,6 +134,7 @@ describe 'Query generator', ->
                       tasks."employee_id" "this.employee.id",
                       employees."id" "this.employee.id",
                       employees."name" "this.employee.name",
+                      employees."hired_at" "this.employee.hiredAt",
                       accounts."id" "this.employee.account.id",
                       accounts."name" "this.employee.account.name"
                   FROM tasks
@@ -215,6 +224,15 @@ describe 'Query generator', ->
           where: 'WHERE tasks."status" = $1'
           params: [3]
           relations: []
+        }
+
+      it 'single equal format column with mapper configured, result should be as expected', ->
+        expect(QueryGenerator.toWhere({
+          hired_at: '2017-07-15'
+        }, config)).to.deep.equal {
+          where: 'WHERE (employees."hired_at" at time zone \'utc\') at time zone \'America/Sao_Paulo\' = $1'
+          params: ['2017-07-15']
+          relations: ['employee']
         }
 
       it 'single equal column of an relation condition (when configured), result should be as expected', ->
@@ -505,7 +523,8 @@ describe 'Query generator', ->
                 tasks."created_at" "this.createdAt",
                 tasks."employee_id" "this.employee.id",
                 employees."id" "this.employee.id",
-                employees."name" "this.employee.name"
+                employees."name" "this.employee.name",
+                employees."hired_at" "this.employee.hiredAt"
             FROM tasks
               LEFT JOIN employees ON tasks.employee_id = employees.id
             WHERE (tasks."account_id" = $1)

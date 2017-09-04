@@ -92,7 +92,9 @@ class QueryGenerator
     field = field.replace fieldOperator.operator, ''
     fieldConfig = @_getFieldConfigurationOrDefault configuration, field, result
     result.params.push fieldConfig.mapper(value)
-    result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" #{fieldOperator.operator} $#{result.params.length}"
+    columnName = "#{fieldConfig.table}.\"#{fieldConfig.column}\""
+    columnName = fieldConfig.format.replace('{{column}}', columnName) if fieldConfig.format
+    result.where.push "#{columnName} #{fieldOperator.operator} $#{result.params.length}"
 
   @_getWhereOperator: (field) ->
     operators = {
@@ -132,7 +134,6 @@ class QueryGenerator
       result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" is null"
 
   @_getFieldConfigurationOrDefault: (config, field, result) -> # TODO should be tested separately
-
     fieldConfiguration =
       table: config.table
       column: field
@@ -141,6 +142,7 @@ class QueryGenerator
     searchConfig = config.search[field]
     if searchConfig
       fieldConfiguration.column = searchConfig.column if searchConfig.column
+      fieldConfiguration.format = searchConfig.format if searchConfig.format
 
       if searchConfig.mapper
         mapper = config.mappers[searchConfig.mapper]
