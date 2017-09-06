@@ -1,5 +1,5 @@
 _ = require 'lodash'
-rowsMapper = require('join-js').default
+collapse = require 'collapser'
 
 class ResultTransformer
 
@@ -17,8 +17,7 @@ class ResultTransformer
     mappers = @_reduceMappers config
     rows = @_applyMappers rows, mappers
 
-    collapse = config.collapse || {}
-    results = rowsMapper.map rows, collapse.resultMaps, collapse.mapId, collapse.columnPrefix
+    results = collapse rows
 
     if config and config.mapper and mappers[config.mapper]
       rootMapper = mappers[config.mapper]
