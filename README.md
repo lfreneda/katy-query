@@ -1,5 +1,5 @@
 # KatyQuery
-KatyQuery :microphone: is a Node.js 'n postgreSQL utility library to support API REST resource search
+KatyQuery :microphone: is a query builder for PostgreSQL
 
 ## Installation
 
