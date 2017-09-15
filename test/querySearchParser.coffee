@@ -2,6 +2,7 @@ expect = require('chai').expect
 QuerySearchParser = require './../lib/querySearchParser'
 
 describe 'Query Search Parser', ->
+
   config = null
   beforeEach ->
     config = {
@@ -14,7 +15,8 @@ describe 'Query Search Parser', ->
         employee: {
           column: 'employee_id'
         },
-        'description~~*': {}
+        'description~~*': {
+        }
       }
       columns: [
         { name: 'id', alias: 'this.id' }

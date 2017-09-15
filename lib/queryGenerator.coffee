@@ -17,12 +17,12 @@ return lastIndex !== -1 && lastIndex === position;
 class QueryGenerator
 
   @toSql: (args, config) ->
-    whereResult = @toWhere(args.where, config, args.options)
+    whereResult = @_toWhere(args.where, config, args.options)
     relations = _.uniq(whereResult.relations.concat(args.relations || []))
 
     return {
-      sqlCount: "#{@toSelectCount(relations, config)} #{whereResult.where}"
-      sqlSelect: "#{@toSelect(relations, config)} #{whereResult.where} #{@toOptions(args.options, config)}"
+      sqlCount: "#{@toSelectCount(relations, config)} WHERE #{whereResult.where}"
+      sqlSelect: "#{@toSelect(relations, config)} WHERE #{whereResult.where} #{@toOptions(args.options, config)}"
       params: whereResult.params
       relations: relations
     }
@@ -57,10 +57,10 @@ class QueryGenerator
     sqlText
 
 
-  @toWhere: (conditions, config, options) ->
+  @_toWhere: (conditions, config, options) ->
 
     if _.isEmpty(conditions) and not options?.tenant
-      return { where: 'WHERE 1=1', params: [], relations: [] }
+      return { where: '1=1', params: [], relations: [] }
 
     result = { where: [], params: [], relations: [] }
 
@@ -83,7 +83,7 @@ class QueryGenerator
       else
         @_whereOperatorClause field, value, result, config
 
-    result.where = "WHERE #{result.where.join ' AND '}"
+    result.where = "#{result.where.join ' AND '}"
     result.relations = _.uniq(result.relations)
     result
 

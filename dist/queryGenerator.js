@@ -27,11 +27,11 @@ return lastIndex !== -1 && lastIndex === position;
 
     QueryGenerator.toSql = function(args, config) {
       var relations, whereResult;
-      whereResult = this.toWhere(args.where, config, args.options);
+      whereResult = this._toWhere(args.where, config, args.options);
       relations = _.uniq(whereResult.relations.concat(args.relations || []));
       return {
-        sqlCount: (this.toSelectCount(relations, config)) + " " + whereResult.where,
-        sqlSelect: (this.toSelect(relations, config)) + " " + whereResult.where + " " + (this.toOptions(args.options, config)),
+        sqlCount: (this.toSelectCount(relations, config)) + " WHERE " + whereResult.where,
+        sqlSelect: (this.toSelect(relations, config)) + " WHERE " + whereResult.where + " " + (this.toOptions(args.options, config)),
         params: whereResult.params,
         relations: relations
       };
@@ -72,11 +72,11 @@ return lastIndex !== -1 && lastIndex === position;
       return sqlText;
     };
 
-    QueryGenerator.toWhere = function(conditions, config, options) {
+    QueryGenerator._toWhere = function(conditions, config, options) {
       var field, i, len, ref, result, tenantValue, tenantValues, value;
       if (_.isEmpty(conditions) && !(options != null ? options.tenant : void 0)) {
         return {
-          where: 'WHERE 1=1',
+          where: '1=1',
           params: [],
           relations: []
         };
@@ -112,7 +112,7 @@ return lastIndex !== -1 && lastIndex === position;
           this._whereOperatorClause(field, value, result, config);
         }
       }
-      result.where = "WHERE " + (result.where.join(' AND '));
+      result.where = "" + (result.where.join(' AND '));
       result.relations = _.uniq(result.relations);
       return result;
     };
