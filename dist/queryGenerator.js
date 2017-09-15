@@ -41,20 +41,23 @@ return lastIndex !== -1 && lastIndex === position;
     };
 
     QueryGenerator._toOptions = function(options, config) {
-      var direction, field, fieldConfig, limit, offset, sort, sqlText;
-      sort = config.table + ".\"id\" ASC";
+      var direction, field, fieldConfig, sort, sqlText;
       if (options.sort) {
+        sort = config.table + ".\"id\" ASC";
         direction = options.sort.indexOf('-') === 0 ? 'DESC' : 'ASC';
         field = options.sort.replace('-', '');
         fieldConfig = this._getFieldConfigurationOrDefault(config, field);
         sort = fieldConfig.table + ".\"" + fieldConfig.column + "\" " + direction;
       }
-      sqlText = "ORDER BY " + sort + " ";
-      offset = options.offset || 0;
-      sqlText += "OFFSET " + offset + " ";
-      limit = options.limit || 25;
-      sqlText += "LIMIT " + limit;
-      return sqlText;
+      sqlText = '';
+      if (sort) {
+        sqlText += "ORDER BY " + sort + " ";
+      }
+      if (options.limit || options.offset) {
+        sqlText += "OFFSET " + (options.offset || 0) + " ";
+        sqlText += "LIMIT " + (options.limit || 10);
+      }
+      return sqlText = sqlText.trim();
     };
 
     QueryGenerator._toWhere = function(conditions, config, options) {
