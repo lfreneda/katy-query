@@ -1,6 +1,8 @@
 # KatyQuery
 KatyQuery :microphone: is a query builder for PostgreSQL
 
+[![katy-query cover](https://raw.githubusercontent.com/lfreneda/katy-query/master/cover.png)](https://github.com/lfreneda/katy-query)
+
 ## Installation
 
 ```shell
