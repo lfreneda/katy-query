@@ -434,32 +434,32 @@ describe 'Query generator', ->
 
   describe 'Options', ->
 
-    describe 'all', ->
-      it 'given options, sql result should be as expected', ->
-        optionsSql = QueryGenerator._toOptions({ sort: '-name', offset: 0, limit: 10, }, config)
-        expect(optionsSql).to.equal 'ORDER BY tasks."name" DESC OFFSET 0 LIMIT 10'
+    describe 'sorting', ->
+      it 'given options sort -name, result should be as expected', ->
+        optionsSql = QueryGenerator._toOptions({ sort: '-name' }, config)
+        expect(optionsSql).to.equal 'ORDER BY tasks."name" DESC'
+
+      it 'given options sort name, result should be as expected', ->
+        optionsSql = QueryGenerator._toOptions({ sort: 'name' }, config)
+        expect(optionsSql).to.equal 'ORDER BY tasks."name" ASC'
 
     describe 'paging', ->
-      it 'when offset is not provided, should be offset 0', ->
-        optionsSql = QueryGenerator._toOptions({ limit: 10, }, config)
-        expect(optionsSql).to.equal 'ORDER BY tasks."id" ASC OFFSET 0 LIMIT 10'
+      it 'when limit was provided but no offset', ->
+        optionsSql = QueryGenerator._toOptions({ limit: 12, }, config)
+        expect(optionsSql).to.equal 'OFFSET 0 LIMIT 12'
 
-      it 'when limit is not provided, should be limit 25', ->
+      it 'when offset was provided but have no limit, limit should be 10', ->
         optionsSql = QueryGenerator._toOptions({ offset: 5 }, config)
-        expect(optionsSql).to.equal 'ORDER BY tasks."id" ASC OFFSET 5 LIMIT 25'
+        expect(optionsSql).to.equal 'OFFSET 5 LIMIT 10'
 
-    describe 'sorting', ->
-      it 'when sort is not provided, should be id asc', ->
-        optionsSql = QueryGenerator._toOptions({ offset: 5 }, config)
-        expect(optionsSql).to.equal 'ORDER BY tasks."id" ASC OFFSET 5 LIMIT 25'
+      it 'when both limit and offset were provided', ->
+        optionsSql = QueryGenerator._toOptions({ limit: 30, offset: 5 }, config)
+        expect(optionsSql).to.equal 'OFFSET 5 LIMIT 30'
 
-      it 'when sort is provided, should be name desc', ->
-        optionsSql = QueryGenerator._toOptions({ sort: '-name' }, config)
-        expect(optionsSql).to.equal 'ORDER BY tasks."name" DESC OFFSET 0 LIMIT 25'
-
-      it 'when sort is provided as configured field, order by should be as expected', ->
-        optionsSql = QueryGenerator._toOptions({ sort: '-employee_name' }, config)
-        expect(optionsSql).to.equal 'ORDER BY employees."name" DESC OFFSET 0 LIMIT 25'
+    describe 'sorting n paging', ->
+      it 'when all configurations were provided', ->
+        optionsSql = QueryGenerator._toOptions({ sort: '-name', limit: 30, offset: 5 }, config)
+        expect(optionsSql).to.equal 'ORDER BY tasks."name" DESC OFFSET 5 LIMIT 30'
 
   describe 'Whole Sql', ->
 

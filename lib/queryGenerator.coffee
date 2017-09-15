@@ -49,22 +49,22 @@ class QueryGenerator
     }
 
   @_toOptions: (options, config) ->
-    sort = "#{config.table}.\"id\" ASC"
+
     if options.sort
+      sort = "#{config.table}.\"id\" ASC"
       direction = if options.sort.indexOf('-') is 0 then 'DESC' else 'ASC'
       field = options.sort.replace('-', '')
       fieldConfig = @_getFieldConfigurationOrDefault config, field
       sort = "#{fieldConfig.table}.\"#{fieldConfig.column}\" #{direction}"
 
-    sqlText = "ORDER BY #{sort} "
+    sqlText = ''
+    sqlText += "ORDER BY #{sort} " if sort
 
-    offset = options.offset or 0
-    sqlText += "OFFSET #{offset} "
+    if options.limit or options.offset
+      sqlText += "OFFSET #{options.offset || 0} "
+      sqlText += "LIMIT #{options.limit || 10}"
 
-    limit = options.limit or 25
-    sqlText += "LIMIT #{limit}"
-    sqlText
-
+    sqlText = sqlText.trim()
 
   @_toWhere: (conditions, config, options) ->
 
