@@ -26,36 +26,21 @@ return lastIndex !== -1 && lastIndex === position;
     function QueryGenerator() {}
 
     QueryGenerator.toSql = function(args, config) {
-      var relations, whereResult;
+      var columns, joins, options, relations, whereResult;
       whereResult = this._toWhere(args.where, config, args.options);
       relations = _.uniq(whereResult.relations.concat(args.relations || []));
+      joins = this._toJoinSql(relations, config);
+      columns = this._toColumnSql(relations, config);
+      options = this._toOptions(args.options, config);
       return {
-        sqlCount: (this.toSelectCount(relations, config)) + " WHERE " + whereResult.where,
-        sqlSelect: (this.toSelect(relations, config)) + " WHERE " + whereResult.where + " " + (this.toOptions(args.options, config)),
+        sqlCount: "SELECT COUNT(distinct " + config.table + ".\"id\") FROM " + config.table + " " + joins + " WHERE " + whereResult.where + ";",
+        sqlSelect: "SELECT " + columns + " FROM " + config.table + " " + joins + " WHERE " + config.table + ".\"id\" IN ( SELECT DISTINCT " + config.table + ".\"id\" FROM " + config.table + " " + joins + " WHERE " + whereResult.where + " ) " + options + ";",
         params: whereResult.params,
         relations: relations
       };
     };
 
-    QueryGenerator.toSelectCount = function(relations, config) {
-      var sqlText;
-      if (relations == null) {
-        relations = [];
-      }
-      sqlText = "SELECT COUNT(distinct " + config.table + ".\"id\") FROM " + config.table + " " + (this._toJoinSql(relations, config));
-      return sqlText.trim();
-    };
-
-    QueryGenerator.toSelect = function(relations, config) {
-      var sqlText;
-      if (relations == null) {
-        relations = [];
-      }
-      sqlText = "SELECT " + (this._toColumnSql(relations, config)) + " FROM " + config.table + " " + (this._toJoinSql(relations, config));
-      return sqlText.trim();
-    };
-
-    QueryGenerator.toOptions = function(options, config) {
+    QueryGenerator._toOptions = function(options, config) {
       var direction, field, fieldConfig, limit, offset, sort, sqlText;
       sort = config.table + ".\"id\" ASC";
       if (options.sort) {

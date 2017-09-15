@@ -436,29 +436,29 @@ describe 'Query generator', ->
 
     describe 'all', ->
       it 'given options, sql result should be as expected', ->
-        optionsSql = QueryGenerator.toOptions({ sort: '-name', offset: 0, limit: 10, }, config)
+        optionsSql = QueryGenerator._toOptions({ sort: '-name', offset: 0, limit: 10, }, config)
         expect(optionsSql).to.equal 'ORDER BY tasks."name" DESC OFFSET 0 LIMIT 10'
 
     describe 'paging', ->
       it 'when offset is not provided, should be offset 0', ->
-        optionsSql = QueryGenerator.toOptions({ limit: 10, }, config)
+        optionsSql = QueryGenerator._toOptions({ limit: 10, }, config)
         expect(optionsSql).to.equal 'ORDER BY tasks."id" ASC OFFSET 0 LIMIT 10'
 
       it 'when limit is not provided, should be limit 25', ->
-        optionsSql = QueryGenerator.toOptions({ offset: 5 }, config)
+        optionsSql = QueryGenerator._toOptions({ offset: 5 }, config)
         expect(optionsSql).to.equal 'ORDER BY tasks."id" ASC OFFSET 5 LIMIT 25'
 
     describe 'sorting', ->
       it 'when sort is not provided, should be id asc', ->
-        optionsSql = QueryGenerator.toOptions({ offset: 5 }, config)
+        optionsSql = QueryGenerator._toOptions({ offset: 5 }, config)
         expect(optionsSql).to.equal 'ORDER BY tasks."id" ASC OFFSET 5 LIMIT 25'
 
       it 'when sort is provided, should be name desc', ->
-        optionsSql = QueryGenerator.toOptions({ sort: '-name' }, config)
+        optionsSql = QueryGenerator._toOptions({ sort: '-name' }, config)
         expect(optionsSql).to.equal 'ORDER BY tasks."name" DESC OFFSET 0 LIMIT 25'
 
       it 'when sort is provided as configured field, order by should be as expected', ->
-        optionsSql = QueryGenerator.toOptions({ sort: '-employee_name' }, config)
+        optionsSql = QueryGenerator._toOptions({ sort: '-employee_name' }, config)
         expect(optionsSql).to.equal 'ORDER BY employees."name" DESC OFFSET 0 LIMIT 25'
 
   describe 'Whole Sql', ->
@@ -497,7 +497,7 @@ describe 'Query generator', ->
               AND tasks."service_id" is null
               AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
               AND tasks."created_at" > $7
-              AND tasks."updated_at" < $8
+              AND tasks."updated_at" < $8;
         '
         sqlSelect: '
             SELECT
@@ -510,14 +510,22 @@ describe 'Query generator', ->
                 employees."hired_at" "this.employee.hiredAt"
             FROM tasks
               LEFT JOIN employees ON tasks.employee_id = employees.id
-            WHERE (tasks."account_id" = $1)
-              AND tasks."employee_id" in ($2, $3, $4)
-              AND employees."name" = $5
-              AND tasks."service_id" is null
-              AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
-              AND tasks."created_at" > $7
-              AND tasks."updated_at" < $8
-            ORDER BY tasks."description" DESC OFFSET 15 LIMIT 28
+            WHERE
+              tasks."id" IN (
+                 SELECT
+                  DISTINCT tasks."id"
+                 FROM tasks
+                   LEFT JOIN employees ON tasks.employee_id = employees.id
+                 WHERE
+                      (tasks."account_id" = $1)
+                  AND tasks."employee_id" in ($2, $3, $4)
+                  AND employees."name" = $5
+                  AND tasks."service_id" is null
+                  AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+                  AND tasks."created_at" > $7
+                  AND tasks."updated_at" < $8
+              )
+            ORDER BY tasks."description" DESC OFFSET 15 LIMIT 28;
         '
         params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15' ]
         relations: [ 'employee' ]

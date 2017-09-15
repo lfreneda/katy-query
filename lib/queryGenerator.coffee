@@ -17,29 +17,38 @@ return lastIndex !== -1 && lastIndex === position;
 class QueryGenerator
 
   @toSql: (args, config) ->
+
     whereResult = @_toWhere(args.where, config, args.options)
     relations = _.uniq(whereResult.relations.concat(args.relations || []))
+    joins = @_toJoinSql(relations, config)
+    columns = @_toColumnSql(relations, config)
+    options = @_toOptions(args.options, config)
 
     return {
-      sqlCount: "#{@toSelectCount(relations, config)} WHERE #{whereResult.where}"
-      sqlSelect: "#{@toSelect(relations, config)} WHERE #{whereResult.where} #{@toOptions(args.options, config)}"
+
+      sqlCount: "SELECT
+                  COUNT(distinct #{config.table}.\"id\")
+                 FROM #{config.table} 
+                  #{joins}
+                 WHERE #{whereResult.where};"
+
+      sqlSelect: "SELECT
+                   #{columns}
+                  FROM #{config.table}
+                   #{joins}
+                  WHERE #{config.table}.\"id\" IN (
+                    SELECT DISTINCT #{config.table}.\"id\"
+                    FROM #{config.table}
+                      #{joins}
+                    WHERE #{whereResult.where}
+                  )
+                  #{options};"
+
       params: whereResult.params
       relations: relations
     }
 
-  @toSelectCount: (relations = [], config) ->
-    sqlText = "SELECT COUNT(distinct #{config.table}.\"id\")
-                 FROM #{config.table}
-                 #{@_toJoinSql(relations, config)}"
-    sqlText.trim()
-
-  @toSelect: (relations = [], config) ->
-    sqlText = "SELECT #{@_toColumnSql(relations, config)}
-               FROM #{config.table}
-               #{@_toJoinSql(relations, config)}"
-    sqlText.trim()
-
-  @toOptions: (options, config) ->
+  @_toOptions: (options, config) ->
     sort = "#{config.table}.\"id\" ASC"
     if options.sort
       direction = if options.sort.indexOf('-') is 0 then 'DESC' else 'ASC'
