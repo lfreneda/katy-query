@@ -167,10 +167,16 @@ class QueryGenerator
     fieldConfiguration
 
   @_toColumnSql: (relations = [], configuration) ->
-    columns = configuration.columns.map (column) -> "#{column.table || configuration.table}.\"#{column.name}\" \"#{column.alias}\""
+    columns = configuration.columns.map (column) ->
+      columnName = "#{column.table || configuration.table}.\"#{column.name}\""
+      columnName = column.format.replace('{{column}}', columnName) if column.format
+      "#{columnName} \"#{column.alias}\""
 
     @_getRelationRequiredChain configuration, relations, (relation) ->
-      columns.push "#{column.table || relation.table}.\"#{column.name}\" \"#{column.alias}\"" for column in relation.columns
+      for column in relation.columns
+        columnName = "#{column.table || relation.table}.\"#{column.name}\""
+        columnName = column.format.replace('{{column}}', columnName) if column.format
+        columns.push "#{columnName} \"#{column.alias}\""
 
     _.uniq(columns).join ', '
 

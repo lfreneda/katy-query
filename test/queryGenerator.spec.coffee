@@ -26,7 +26,7 @@ config = {
 
   columns: [
     { name: 'id', alias: 'this.id' }
-    { name: 'description', alias: 'this.description' }
+    { name: 'description', alias: 'this.description', format: 'COALESCE({{column}},\'(none)\')' }
     { name: 'created_at', alias: 'this.createdAt' }
     { name: 'employee_id', alias: 'this.employee.id' }
   ]
@@ -39,6 +39,15 @@ config = {
         { name: 'id', alias: 'this.employee.id' }
         { name: 'name', alias: 'this.employee.name' }
         { name: 'hired_at', alias: 'this.employee.hiredAt' }
+      ]
+    }
+    rating: {
+      table: 'rating'
+      sql: 'LEFT JOIN rating ON tasks.rating_id = rating.id'
+      columns: [
+        { name: 'id', alias: 'this.rating.id' }
+        { name: 'stars', alias: 'this.rating.stars' }
+        { name: 'comments', alias: 'this.rating.comments', format: 'COALESCE({{column}},\'(none)\')' }
       ]
     }
     'employee.account': {
@@ -67,24 +76,34 @@ describe 'Query generator', ->
     it 'simple (with no relation)', ->
       expect(QueryGenerator._toColumnSql([], config)).to.equal '
               tasks."id" "this.id",
-              tasks."description" "this.description",
+              COALESCE(tasks."description",\'(none)\') "this.description",
               tasks."created_at" "this.createdAt",
               tasks."employee_id" "this.employee.id"'
 
     it 'with provided relation', ->
       expect(QueryGenerator._toColumnSql(['employee'], config)).to.equal '
               tasks."id" "this.id",
-              tasks."description" "this.description",
+              COALESCE(tasks."description",\'(none)\') "this.description",
               tasks."created_at" "this.createdAt",
               tasks."employee_id" "this.employee.id",
               employees."id" "this.employee.id",
               employees."name" "this.employee.name",
               employees."hired_at" "this.employee.hiredAt"'
 
+    it 'with provided relation with format', ->
+      expect(QueryGenerator._toColumnSql(['rating'], config)).to.equal '
+              tasks."id" "this.id",
+              COALESCE(tasks."description",\'(none)\') "this.description",
+              tasks."created_at" "this.createdAt",
+              tasks."employee_id" "this.employee.id",
+              rating."id" "this.rating.id",
+              rating."stars" "this.rating.stars",
+              COALESCE(rating."comments",\'(none)\') "this.rating.comments"'
+
     it 'with provided relation which requires previous relation', ->
       expect(QueryGenerator._toColumnSql(['employee.account.tags'], config)).to.equal '
               tasks."id" "this.id",
-              tasks."description" "this.description",
+              COALESCE(tasks."description",\'(none)\') "this.description",
               tasks."created_at" "this.createdAt",
               tasks."employee_id" "this.employee.id",
               employees."id" "this.employee.id",
@@ -98,7 +117,7 @@ describe 'Query generator', ->
     it 'with provided relation which requires previous relation [2]', ->
       expect(QueryGenerator._toColumnSql(['employee.account'], config)).to.equal '
               tasks."id" "this.id",
-              tasks."description" "this.description",
+              COALESCE(tasks."description",\'(none)\') "this.description",
               tasks."created_at" "this.createdAt",
               tasks."employee_id" "this.employee.id",
               employees."id" "this.employee.id",
@@ -502,7 +521,7 @@ describe 'Query generator', ->
         sqlSelect: '
             SELECT
                 tasks."id" "this.id",
-                tasks."description" "this.description",
+                COALESCE(tasks."description",\'(none)\') "this.description",
                 tasks."created_at" "this.createdAt",
                 tasks."employee_id" "this.employee.id",
                 employees."id" "this.employee.id",
