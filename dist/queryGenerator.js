@@ -228,15 +228,24 @@ return lastIndex !== -1 && lastIndex === position;
         relations = [];
       }
       columns = configuration.columns.map(function(column) {
-        return (column.table || configuration.table) + ".\"" + column.name + "\" \"" + column.alias + "\"";
+        var columnName;
+        columnName = (column.table || configuration.table) + ".\"" + column.name + "\"";
+        if (column.format) {
+          columnName = column.format.replace('{{column}}', columnName);
+        }
+        return columnName + " \"" + column.alias + "\"";
       });
       this._getRelationRequiredChain(configuration, relations, function(relation) {
-        var column, i, len, ref, results;
+        var column, columnName, i, len, ref, results;
         ref = relation.columns;
         results = [];
         for (i = 0, len = ref.length; i < len; i++) {
           column = ref[i];
-          results.push(columns.push((column.table || relation.table) + ".\"" + column.name + "\" \"" + column.alias + "\""));
+          columnName = (column.table || relation.table) + ".\"" + column.name + "\"";
+          if (column.format) {
+            columnName = column.format.replace('{{column}}', columnName);
+          }
+          results.push(columns.push(columnName + " \"" + column.alias + "\""));
         }
         return results;
       });
