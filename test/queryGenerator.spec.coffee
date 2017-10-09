@@ -10,6 +10,10 @@ config = {
       return 3 if statusName.trim().toLowerCase() == 'done'
   }
   search: {
+    'employee.created_at': {
+      relation: 'employee'
+      column: 'created_at'
+    }
     employee_name: {
       relation: 'employee'
       column: 'name'
@@ -39,6 +43,7 @@ config = {
         { name: 'id', alias: 'this.employee.id' }
         { name: 'name', alias: 'this.employee.name' }
         { name: 'hired_at', alias: 'this.employee.hiredAt' }
+        { name: 'created_at', alias: 'this.employee.createdAt' }
       ]
     }
     rating: {
@@ -88,7 +93,8 @@ describe 'Query generator', ->
               tasks."employee_id" "this.employee.id",
               employees."id" "this.employee.id",
               employees."name" "this.employee.name",
-              employees."hired_at" "this.employee.hiredAt"'
+              employees."hired_at" "this.employee.hiredAt",
+              employees."created_at" "this.employee.createdAt"',
 
     it 'with provided relation with format', ->
       expect(QueryGenerator._toColumnSql(['rating'], config)).to.equal '
@@ -109,6 +115,7 @@ describe 'Query generator', ->
               employees."id" "this.employee.id",
               employees."name" "this.employee.name",
               employees."hired_at" "this.employee.hiredAt",
+              employees."created_at" "this.employee.createdAt",
               accounts."id" "this.employee.account.id",
               accounts."name" "this.employee.account.name",
               accounts_tags."id" "this.employee.account.tags[].id",
@@ -123,6 +130,7 @@ describe 'Query generator', ->
               employees."id" "this.employee.id",
               employees."name" "this.employee.name",
               employees."hired_at" "this.employee.hiredAt",
+              employees."created_at" "this.employee.createdAt",
               accounts."id" "this.employee.account.id",
               accounts."name" "this.employee.account.name"'
 
@@ -355,6 +363,66 @@ describe 'Query generator', ->
           relations: []
         }
 
+    describe 'comparison between search fields', ->
+
+      # FIXME: Isso é bad, bater no banco com uma syntax errada de tipo de dado
+      # Exemplo: Dado timespan bater como string D:
+      # PS: isso acontece em todos os casos, não só nesse :S
+
+      it 'single greater than with no configured search fields', ->
+        expect(QueryGenerator._toWhere({
+          'created_at>': 'employee.created_date'
+        }, config)).to.deep.equal {
+          where: 'tasks.\"created_at\" > $1'
+          params: [ 'employee.created_date' ]
+          relations: []
+        }
+
+      it 'single greater than with configured search fields', ->
+        expect(QueryGenerator._toWhere({
+          'created_at>': 'employee.created_at'
+        }, config)).to.deep.equal {
+          where: 'tasks."created_at" > employees."created_at"'
+          params: []
+          relations: ['employee']
+        }
+
+      it 'single greater than or equal with configured search fields', ->
+        expect(QueryGenerator._toWhere({
+          'created_at>=': 'employee.created_at'
+        }, config)).to.deep.equal {
+          where: 'tasks."created_at" >= employees."created_at"'
+          params: []
+          relations: ['employee']
+        }
+
+      it 'single less than or equal with configured search fields', ->
+        expect(QueryGenerator._toWhere({
+          'created_at<=': 'employee.created_at'
+        }, config)).to.deep.equal {
+          where: 'tasks."created_at" <= employees."created_at"'
+          params: []
+          relations: ['employee']
+        }
+
+      it 'single less than with configured search fields', ->
+        expect(QueryGenerator._toWhere({
+          'created_at<': 'employee.created_at'
+        }, config)).to.deep.equal {
+          where: 'tasks."created_at" < employees."created_at"'
+          params: []
+          relations: ['employee']
+        }
+
+      it 'single equal to with configured search fields', ->
+        expect(QueryGenerator._toWhere({
+          'created_at': 'employee.created_at'
+        }, config)).to.deep.equal {
+          where: 'tasks."created_at" = employees."created_at"'
+          params: []
+          relations: ['employee']
+        }
+
     describe 'array comparison', ->
 
       it 'single in condition, result should be as expected', ->
@@ -493,6 +561,7 @@ describe 'Query generator', ->
           customer_id: [15,'null']
           'created_at>': '2015-05-15'
           'updated_at<': '2017-05-15'
+          'created_at>=': 'employee.created_at'
         },
         options:  {
           sort: '-description',
@@ -516,7 +585,8 @@ describe 'Query generator', ->
               AND tasks."service_id" is null
               AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
               AND tasks."created_at" > $7
-              AND tasks."updated_at" < $8;
+              AND tasks."updated_at" < $8
+              AND tasks."created_at" >= employees."created_at";
         '
         sqlSelect: '
             SELECT
@@ -526,7 +596,8 @@ describe 'Query generator', ->
                 tasks."employee_id" "this.employee.id",
                 employees."id" "this.employee.id",
                 employees."name" "this.employee.name",
-                employees."hired_at" "this.employee.hiredAt"
+                employees."hired_at" "this.employee.hiredAt",
+                employees."created_at" "this.employee.createdAt"
             FROM tasks
               LEFT JOIN employees ON tasks.employee_id = employees.id
             WHERE
@@ -543,6 +614,7 @@ describe 'Query generator', ->
                   AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
                   AND tasks."created_at" > $7
                   AND tasks."updated_at" < $8
+                  AND tasks."created_at" >= employees."created_at"
               )
             ORDER BY tasks."description" DESC OFFSET 15 LIMIT 28;
         '

@@ -106,16 +106,30 @@ return lastIndex !== -1 && lastIndex === position;
     };
 
     QueryGenerator._whereOperatorClause = function(field, value, result, configuration) {
-      var columnName, fieldConfig, fieldOperator;
+      var columnName, comparedColumnName, comparedFieldConfig, fieldConfig, fieldOperator;
       fieldOperator = this._getWhereOperator(field);
       field = field.replace(fieldOperator.operator, '');
       fieldConfig = this._getFieldConfigurationOrDefault(configuration, field, result);
-      result.params.push(fieldConfig.mapper(value));
       columnName = fieldConfig.table + ".\"" + fieldConfig.column + "\"";
-      if (fieldConfig.format) {
-        columnName = fieldConfig.format.replace('{{column}}', columnName);
+      if (this._isSearchField(configuration, value)) {
+        comparedFieldConfig = this._getFieldConfigurationOrDefault(configuration, value, result);
+        comparedColumnName = comparedFieldConfig.table + ".\"" + comparedFieldConfig.column + "\"";
+        return result.where.push(columnName + " " + fieldOperator.operator + " " + comparedColumnName);
+      } else {
+        if (fieldConfig.format) {
+          columnName = fieldConfig.format.replace('{{column}}', columnName);
+        }
+        result.params.push(fieldConfig.mapper(value));
+        return result.where.push(columnName + " " + fieldOperator.operator + " $" + result.params.length);
       }
-      return result.where.push(columnName + " " + fieldOperator.operator + " $" + result.params.length);
+    };
+
+    QueryGenerator._isSearchField = function(config, value) {
+      if (config.search[value]) {
+        return true;
+      } else {
+        return false;
+      }
     };
 
     QueryGenerator._getWhereOperator = function(field) {

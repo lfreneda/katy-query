@@ -100,10 +100,20 @@ class QueryGenerator
     fieldOperator = @_getWhereOperator field
     field = field.replace fieldOperator.operator, ''
     fieldConfig = @_getFieldConfigurationOrDefault configuration, field, result
-    result.params.push fieldConfig.mapper(value)
+
     columnName = "#{fieldConfig.table}.\"#{fieldConfig.column}\""
-    columnName = fieldConfig.format.replace('{{column}}', columnName) if fieldConfig.format
-    result.where.push "#{columnName} #{fieldOperator.operator} $#{result.params.length}"
+
+    if @_isSearchField(configuration, value)
+      comparedFieldConfig = @_getFieldConfigurationOrDefault configuration, value, result
+      comparedColumnName = "#{comparedFieldConfig.table}.\"#{comparedFieldConfig.column}\""
+      result.where.push "#{columnName} #{fieldOperator.operator} #{comparedColumnName}"
+    else
+      columnName = fieldConfig.format.replace('{{column}}', columnName) if fieldConfig.format
+      result.params.push fieldConfig.mapper(value)
+      result.where.push "#{columnName} #{fieldOperator.operator} $#{result.params.length}"
+
+  @_isSearchField: (config, value) ->
+    if config.search[value] then yes else no
 
   @_getWhereOperator: (field) ->
     operators = {
