@@ -26,15 +26,22 @@ return lastIndex !== -1 && lastIndex === position;
     function QueryGenerator() {}
 
     QueryGenerator.toSql = function(args, config) {
-      var columns, joins, options, relations, whereResult;
+      var columns, joins, optionsInner, optionsOuter, relations, whereResult;
       whereResult = this._toWhere(args.where, config, args.options);
       relations = _.uniq(whereResult.relations.concat(args.relations || []));
       joins = this._toJoinSql(relations, config);
       columns = this._toColumnSql(relations, config);
-      options = this._toOptions(args.options, config);
+      args.options = args.options || {};
+      optionsInner = this._toOptions({
+        limit: args.options.limit,
+        offset: args.options.offset
+      }, config);
+      optionsOuter = this._toOptions({
+        sort: args.options.sort
+      }, config);
       return {
         sqlCount: "SELECT COUNT(distinct " + config.table + ".\"id\") FROM " + config.table + " " + joins + " WHERE " + whereResult.where + ";",
-        sqlSelect: "SELECT " + columns + " FROM " + config.table + " " + joins + " WHERE " + config.table + ".\"id\" IN ( SELECT DISTINCT " + config.table + ".\"id\" FROM " + config.table + " " + joins + " WHERE " + whereResult.where + " ) " + options + ";",
+        sqlSelect: "SELECT " + columns + " FROM " + config.table + " " + joins + " WHERE " + config.table + ".\"id\" IN ( SELECT DISTINCT " + config.table + ".\"id\" FROM " + config.table + " " + joins + " WHERE " + whereResult.where + " " + optionsInner + " ) " + optionsOuter + ";",
         params: whereResult.params,
         relations: relations
       };

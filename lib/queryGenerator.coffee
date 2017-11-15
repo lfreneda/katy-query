@@ -22,7 +22,10 @@ class QueryGenerator
     relations = _.uniq(whereResult.relations.concat(args.relations || []))
     joins = @_toJoinSql(relations, config)
     columns = @_toColumnSql(relations, config)
-    options = @_toOptions(args.options, config)
+
+    args.options = args.options || {}
+    optionsInner = @_toOptions({ limit: args.options.limit, offset: args.options.offset }, config)
+    optionsOuter = @_toOptions({ sort: args.options.sort }, config)
 
     return {
 
@@ -41,8 +44,9 @@ class QueryGenerator
                     FROM #{config.table}
                       #{joins}
                     WHERE #{whereResult.where}
+                    #{optionsInner}
                   )
-                  #{options};"
+                  #{optionsOuter};"
 
       params: whereResult.params
       relations: relations

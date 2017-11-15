@@ -602,6 +602,7 @@ describe 'Query generator', ->
               LEFT JOIN employees ON tasks.employee_id = employees.id
             WHERE
               tasks."id" IN (
+
                  SELECT
                   DISTINCT tasks."id"
                  FROM tasks
@@ -615,8 +616,9 @@ describe 'Query generator', ->
                   AND tasks."created_at" > $7
                   AND tasks."updated_at" < $8
                   AND tasks."created_at" >= employees."created_at"
+                 OFFSET 15 LIMIT 28
               )
-            ORDER BY tasks."description" DESC OFFSET 15 LIMIT 28;
+            ORDER BY tasks."description" DESC;
         '
         params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15' ]
         relations: [ 'employee' ]
