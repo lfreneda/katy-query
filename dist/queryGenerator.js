@@ -40,7 +40,7 @@ return lastIndex !== -1 && lastIndex === position;
         sort: args.options.sort
       }, config);
       return {
-        sqlCount: "SELECT COUNT(distinct " + config.table + ".\"id\") FROM " + config.table + " " + joins + " WHERE " + whereResult.where + ";",
+        sqlCount: "SELECT COUNT(DISTINCT " + config.table + ".\"id\") FROM " + config.table + " " + joins + " WHERE " + whereResult.where + ";",
         sqlSelectIds: "SELECT DISTINCT " + config.table + ".\"id\" FROM " + config.table + " " + joins + " WHERE " + whereResult.where + " " + pageOptions + ";",
         sqlSelect: "SELECT " + columns + " FROM " + config.table + " " + joins + " WHERE " + whereResult.where + " " + sortOptions + " " + pageOptions + ";",
         params: whereResult.params,

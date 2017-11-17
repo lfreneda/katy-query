@@ -577,7 +577,7 @@ describe 'Query generator', ->
       expect(result).to.deep.equal {
 
         sqlCount: '
-            SELECT COUNT(distinct tasks."id")
+            SELECT COUNT(DISTINCT tasks."id")
             FROM tasks
               LEFT JOIN employees ON tasks.employee_id = employees.id
             WHERE (tasks."account_id" = $1)
