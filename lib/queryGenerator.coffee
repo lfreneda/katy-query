@@ -24,8 +24,8 @@ class QueryGenerator
     columns = @_toColumnSql(relations, config)
 
     args.options = args.options || {}
-    optionsInner = @_toOptions({ limit: args.options.limit, offset: args.options.offset }, config)
-    optionsOuter = @_toOptions({ sort: args.options.sort }, config)
+    pageOptions = @_toOptions({ limit: args.options.limit, offset: args.options.offset }, config)
+    sortOptions = @_toOptions({ sort: args.options.sort }, config)
 
     return {
 
@@ -35,19 +35,21 @@ class QueryGenerator
                   #{joins}
                  WHERE #{whereResult.where};"
 
-      sqlSelect: "SELECT
-                   #{columns}
+      sqlSelectIds: "SELECT DISTINCT #{config.table}.\"id\"
+                     FROM #{config.table}
+                     #{joins}
+                     WHERE #{whereResult.where}
+                     #{pageOptions};
+                     "
+      sqlSelect: "SELECT #{columns}
                   FROM #{config.table}
-                   #{joins}
-                  WHERE #{config.table}.\"id\" IN (
-                    SELECT DISTINCT #{config.table}.\"id\"
-                    FROM #{config.table}
-                      #{joins}
-                    WHERE #{whereResult.where}
-                    #{optionsInner}
-                  )
-                  #{optionsOuter};"
+                  #{joins}
+                  WHERE #{whereResult.where}
+                  #{sortOptions}
+                  #{pageOptions};
+                  "
 
+      
       params: whereResult.params
       relations: relations
     }

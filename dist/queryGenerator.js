@@ -26,22 +26,23 @@ return lastIndex !== -1 && lastIndex === position;
     function QueryGenerator() {}
 
     QueryGenerator.toSql = function(args, config) {
-      var columns, joins, optionsInner, optionsOuter, relations, whereResult;
+      var columns, joins, pageOptions, relations, sortOptions, whereResult;
       whereResult = this._toWhere(args.where, config, args.options);
       relations = _.uniq(whereResult.relations.concat(args.relations || []));
       joins = this._toJoinSql(relations, config);
       columns = this._toColumnSql(relations, config);
       args.options = args.options || {};
-      optionsInner = this._toOptions({
+      pageOptions = this._toOptions({
         limit: args.options.limit,
         offset: args.options.offset
       }, config);
-      optionsOuter = this._toOptions({
+      sortOptions = this._toOptions({
         sort: args.options.sort
       }, config);
       return {
         sqlCount: "SELECT COUNT(distinct " + config.table + ".\"id\") FROM " + config.table + " " + joins + " WHERE " + whereResult.where + ";",
-        sqlSelect: "SELECT " + columns + " FROM " + config.table + " " + joins + " WHERE " + config.table + ".\"id\" IN ( SELECT DISTINCT " + config.table + ".\"id\" FROM " + config.table + " " + joins + " WHERE " + whereResult.where + " " + optionsInner + " ) " + optionsOuter + ";",
+        sqlSelectIds: "SELECT DISTINCT " + config.table + ".\"id\" FROM " + config.table + " " + joins + " WHERE " + whereResult.where + " " + pageOptions + ";",
+        sqlSelect: "SELECT " + columns + " FROM " + config.table + " " + joins + " WHERE " + whereResult.where + " " + sortOptions + " " + pageOptions + ";",
         params: whereResult.params,
         relations: relations
       };

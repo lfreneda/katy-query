@@ -575,6 +575,7 @@ describe 'Query generator', ->
       }, config
 
       expect(result).to.deep.equal {
+
         sqlCount: '
             SELECT COUNT(distinct tasks."id")
             FROM tasks
@@ -588,6 +589,23 @@ describe 'Query generator', ->
               AND tasks."updated_at" < $8
               AND tasks."created_at" >= employees."created_at";
         '
+
+        sqlSelectIds: '
+            SELECT DISTINCT tasks."id"
+            FROM tasks
+            LEFT JOIN employees ON tasks.employee_id = employees.id
+            WHERE
+                (tasks."account_id" = $1)
+            AND tasks."employee_id" in ($2, $3, $4)
+            AND employees."name" = $5
+            AND tasks."service_id" is null
+            AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+            AND tasks."created_at" > $7
+            AND tasks."updated_at" < $8
+            AND tasks."created_at" >= employees."created_at"
+            OFFSET 15 LIMIT 28;
+        '
+
         sqlSelect: '
             SELECT
                 tasks."id" "this.id",
@@ -601,25 +619,18 @@ describe 'Query generator', ->
             FROM tasks
               LEFT JOIN employees ON tasks.employee_id = employees.id
             WHERE
-              tasks."id" IN (
-
-                 SELECT
-                  DISTINCT tasks."id"
-                 FROM tasks
-                   LEFT JOIN employees ON tasks.employee_id = employees.id
-                 WHERE
-                      (tasks."account_id" = $1)
-                  AND tasks."employee_id" in ($2, $3, $4)
-                  AND employees."name" = $5
-                  AND tasks."service_id" is null
-                  AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
-                  AND tasks."created_at" > $7
-                  AND tasks."updated_at" < $8
-                  AND tasks."created_at" >= employees."created_at"
-                 OFFSET 15 LIMIT 28
-              )
-            ORDER BY tasks."description" DESC;
+                  (tasks."account_id" = $1)
+              AND tasks."employee_id" in ($2, $3, $4)
+              AND employees."name" = $5
+              AND tasks."service_id" is null
+              AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+              AND tasks."created_at" > $7
+              AND tasks."updated_at" < $8
+              AND tasks."created_at" >= employees."created_at"
+            ORDER BY tasks."description" DESC
+            OFFSET 15 LIMIT 28;
         '
+
         params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15' ]
         relations: [ 'employee' ]
       }
