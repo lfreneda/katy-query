@@ -14,6 +14,9 @@ config = {
       relation: 'employee'
       column: 'created_at'
     }
+    description: {
+      column: 'description'
+    }
     employee_name: {
       relation: 'employee'
       column: 'name'
@@ -523,12 +526,12 @@ describe 'Query generator', ->
 
     describe 'sorting', ->
       it 'given options sort -name, result should be as expected', ->
-        optionsSql = QueryGenerator._toOptions({ sort: '-name' }, config)
-        expect(optionsSql).to.equal 'ORDER BY tasks."name" DESC'
+        optionsSql = QueryGenerator._toOptions({ sort: '-description' }, config)
+        expect(optionsSql).to.equal 'ORDER BY tasks."description" DESC'
 
       it 'given options sort name, result should be as expected', ->
-        optionsSql = QueryGenerator._toOptions({ sort: 'name' }, config)
-        expect(optionsSql).to.equal 'ORDER BY tasks."name" ASC'
+        optionsSql = QueryGenerator._toOptions({ sort: 'description' }, config)
+        expect(optionsSql).to.equal 'ORDER BY tasks."description" ASC'
 
     describe 'paging', ->
       it 'when limit was provided but no offset', ->
@@ -543,10 +546,19 @@ describe 'Query generator', ->
         optionsSql = QueryGenerator._toOptions({ limit: 30, offset: 5 }, config)
         expect(optionsSql).to.equal 'OFFSET 5 LIMIT 30'
 
+      it 'when both limit and offset were provided', ->
+        optionsSql = QueryGenerator._toOptions({ limit: '30', offset: '00005' }, config)
+        expect(optionsSql).to.equal 'OFFSET 5 LIMIT 30'
+
     describe 'sorting n paging', ->
+
       it 'when all configurations were provided', ->
-        optionsSql = QueryGenerator._toOptions({ sort: '-name', limit: 30, offset: 5 }, config)
-        expect(optionsSql).to.equal 'ORDER BY tasks."name" DESC OFFSET 5 LIMIT 30'
+        optionsSql = QueryGenerator._toOptions({ sort: '-description', limit: 30, offset: 5 }, config)
+        expect(optionsSql).to.equal 'ORDER BY tasks."description" DESC OFFSET 5 LIMIT 30'
+
+      it 'should block sql injection attack', ->
+        optionsSql = QueryGenerator._toOptions({ sort: '-description;--delete from table;', limit: '-name;--delete from table;', offset: '-name;--delete from table;' }, config)
+        expect(optionsSql).to.equal 'ORDER BY tasks."id" ASC OFFSET 0 LIMIT 10'
 
   describe 'Whole Sql', ->
 
@@ -603,6 +615,7 @@ describe 'Query generator', ->
             AND tasks."created_at" > $7
             AND tasks."updated_at" < $8
             AND tasks."created_at" >= employees."created_at"
+            ORDER BY tasks."description" DESC
             OFFSET 15 LIMIT 28;
         '
 

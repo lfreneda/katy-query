@@ -38,7 +38,7 @@ class QueryGenerator
       sqlSelectIds: "SELECT DISTINCT #{config.table}.\"id\"
                      FROM #{config.table}
                      #{joins}
-                     WHERE #{whereResult.where} #{pageOptions};"
+                     WHERE #{whereResult.where} #{sortOptions} #{pageOptions};"
 
       sqlSelect: "SELECT #{columns}
                   FROM #{config.table}
@@ -51,19 +51,23 @@ class QueryGenerator
 
   @_toOptions: (options, config) ->
 
+    sqlText = ''
+
     if options.sort
       sort = "#{config.table}.\"id\" ASC"
       direction = if options.sort.indexOf('-') is 0 then 'DESC' else 'ASC'
-      field = options.sort.replace('-', '')
+      field = options.sort.replace(/-|;/g, '')
       fieldConfig = @_getFieldConfigurationOrDefault config, field
-      sort = "#{fieldConfig.table}.\"#{fieldConfig.column}\" #{direction}"
-
-    sqlText = ''
-    sqlText += "ORDER BY #{sort} " if sort
+      if (@_isSearchField(config, field))
+        sort = "#{fieldConfig.table}.\"#{fieldConfig.column}\" #{direction}"
+      sqlText += "ORDER BY #{sort} " if sort
 
     if options.limit or options.offset
-      sqlText += "OFFSET #{options.offset || 0} "
-      sqlText += "LIMIT #{options.limit || 10}"
+      offsetValue = parseInt(options.offset) || 0
+      limitValue = parseInt(options.limit) || 10
+      if _.isNumber(offsetValue) and _.isNumber(limitValue)
+        sqlText += "OFFSET #{offsetValue} "
+        sqlText += "LIMIT #{limitValue}"
 
     sqlText = sqlText.trim()
 
@@ -154,12 +158,14 @@ class QueryGenerator
       result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" is null"
 
   @_getFieldConfigurationOrDefault: (config, field, result) -> # TODO should be tested separately
+
     fieldConfiguration =
       table: config.table
       column: field
       mapper: (value) -> value
 
     searchConfig = config.search[field]
+
     if searchConfig
       fieldConfiguration.column = searchConfig.column if searchConfig.column
       fieldConfiguration.format = searchConfig.format if searchConfig.format
