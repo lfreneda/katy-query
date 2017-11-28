@@ -1,6 +1,6 @@
 {
   "name": "katy-query",
-  "version": "4.4.0",
+  "version": "4.4.1",
   "description": "KatyQuery :microphone: is a query builder for PostgreSQL",
   "main": "dist/index.js",
   "scripts": {
@@ -38,7 +38,7 @@
     "supervisor": "^0.11.0"
   },
   "dependencies": {
-    "collapser": "^2.0.0",
+    "collapser": "^2.0.1",
     "lodash": "^4.15.0",
     "search-query-parser": "0.0.4",
     "util": "^0.10.3"
