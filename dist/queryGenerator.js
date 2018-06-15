@@ -41,7 +41,7 @@ return lastIndex !== -1 && lastIndex === position;
       }, config);
       return {
         sqlCount: "SELECT COUNT(DISTINCT " + config.table + ".\"id\") FROM " + config.table + " " + joins + " WHERE " + whereResult.where + ";",
-        sqlSelectIds: "SELECT DISTINCT " + config.table + ".\"id\" FROM " + config.table + " " + joins + " WHERE " + whereResult.where + " " + sortOptions + " " + pageOptions + ";",
+        sqlSelectIds: "SELECT " + config.table + ".\"id\" FROM " + config.table + " " + joins + " WHERE " + whereResult.where + " GROUP BY " + config.table + ".\"id\" " + sortOptions + " " + pageOptions + ";",
         sqlSelect: "SELECT " + columns + " FROM " + config.table + " " + joins + " WHERE " + whereResult.where + " " + sortOptions + " " + pageOptions + ";",
         params: whereResult.params,
         relations: relations

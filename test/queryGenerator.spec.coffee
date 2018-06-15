@@ -603,7 +603,7 @@ describe 'Query generator', ->
         '
 
         sqlSelectIds: '
-            SELECT DISTINCT tasks."id"
+            SELECT tasks."id"
             FROM tasks
             LEFT JOIN employees ON tasks.employee_id = employees.id
             WHERE
@@ -615,6 +615,7 @@ describe 'Query generator', ->
             AND tasks."created_at" > $7
             AND tasks."updated_at" < $8
             AND tasks."created_at" >= employees."created_at"
+            GROUP BY tasks."id"
             ORDER BY tasks."description" DESC
             OFFSET 15 LIMIT 28;
         '
