@@ -40,9 +40,9 @@ return lastIndex !== -1 && lastIndex === position;
         sort: args.options.sort
       }, config);
       return {
-        sqlCount: "SELECT COUNT(DISTINCT " + config.table + ".\"id\") FROM " + config.table + " " + joins + " WHERE " + whereResult.where + ";",
-        sqlSelectIds: "SELECT " + config.table + ".\"id\" FROM " + config.table + " " + joins + " WHERE " + whereResult.where + " GROUP BY " + config.table + ".\"id\" " + sortOptions + " " + pageOptions + ";",
-        sqlSelect: "SELECT " + columns + " FROM " + config.table + " " + joins + " WHERE " + whereResult.where + " " + sortOptions + " " + pageOptions + ";",
+        sqlCount: "SELECT COUNT(DISTINCT " + config.table + ".\"id\") FROM " + (config.from || config.table) + " " + joins + " WHERE " + whereResult.where + ";",
+        sqlSelectIds: "SELECT " + config.table + ".\"id\" FROM " + (config.from || config.table) + " " + joins + " WHERE " + whereResult.where + " GROUP BY " + config.table + ".\"id\" " + sortOptions + " " + pageOptions + ";",
+        sqlSelect: "SELECT " + columns + " FROM " + (config.from || config.table) + " " + joins + " WHERE " + whereResult.where + " " + sortOptions + " " + pageOptions + ";",
         params: whereResult.params,
         relations: relations
       };

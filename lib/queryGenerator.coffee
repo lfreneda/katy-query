@@ -31,13 +31,13 @@ class QueryGenerator
 
       sqlCount: "SELECT
                   COUNT(DISTINCT #{config.table}.\"id\")
-                 FROM #{config.table} 
+                 FROM #{config.from || config.table}
                   #{joins}
                  WHERE 
                  #{whereResult.where};"
 
       sqlSelectIds: "SELECT #{config.table}.\"id\"
-                     FROM #{config.table}
+                     FROM #{config.from || config.table}
                      #{joins}
                      WHERE 
                      #{whereResult.where} 
@@ -46,7 +46,7 @@ class QueryGenerator
                      #{pageOptions};"
 
       sqlSelect: "SELECT #{columns}
-                  FROM #{config.table}
+                  FROM #{config.from || config.table}
                   #{joins}
                   WHERE 
                   #{whereResult.where} 

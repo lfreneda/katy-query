@@ -3,6 +3,7 @@ QueryGenerator = require './../lib/queryGenerator'
 
 config = {
   table: 'tasks'
+  from: 'tasks join orders on orders.id = tasks.order_id'
   mappers: {
     'task_status_from_name_to_ordinal': (statusName) ->
       return 1 if statusName.trim().toLowerCase() == 'scheduled'
@@ -590,7 +591,7 @@ describe 'Query generator', ->
 
         sqlCount: '
             SELECT COUNT(DISTINCT tasks."id")
-            FROM tasks
+            FROM tasks join orders on orders.id = tasks.order_id
               LEFT JOIN employees ON tasks.employee_id = employees.id
             WHERE (tasks."account_id" = $1)
               AND tasks."employee_id" in ($2, $3, $4)
@@ -604,7 +605,7 @@ describe 'Query generator', ->
 
         sqlSelectIds: '
             SELECT tasks."id"
-            FROM tasks
+            FROM tasks join orders on orders.id = tasks.order_id
             LEFT JOIN employees ON tasks.employee_id = employees.id
             WHERE
                 (tasks."account_id" = $1)
@@ -630,7 +631,7 @@ describe 'Query generator', ->
                 employees."name" "this.employee.name",
                 employees."hired_at" "this.employee.hiredAt",
                 employees."created_at" "this.employee.createdAt"
-            FROM tasks
+            FROM tasks join orders on orders.id = tasks.order_id
               LEFT JOIN employees ON tasks.employee_id = employees.id
             WHERE
                   (tasks."account_id" = $1)
