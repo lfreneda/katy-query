@@ -108,7 +108,7 @@ return lastIndex !== -1 && lastIndex === position;
         value = conditions[field];
         if (_.isArray(value)) {
           this._whereClauseAsArray(field, value, result, config);
-        } else if (value === null || value === 'null') {
+        } else if (value === null || value === 'null' || value === '!null') {
           this._whereNullClause(field, value, result, config);
         } else {
           this._whereOperatorClause(field, value, result, config);
@@ -211,7 +211,10 @@ return lastIndex !== -1 && lastIndex === position;
       var fieldConfig;
       fieldConfig = this._getFieldConfigurationOrDefault(configuration, field, result);
       if (value === null || value === 'null') {
-        return result.where.push(fieldConfig.table + ".\"" + fieldConfig.column + "\" is null");
+        result.where.push(fieldConfig.table + ".\"" + fieldConfig.column + "\" is null");
+      }
+      if (value === '!null') {
+        return result.where.push(fieldConfig.table + ".\"" + fieldConfig.column + "\" is not null");
       }
     };
 

@@ -267,6 +267,15 @@ describe 'Query generator', ->
           relations: [ 'employee' ]
         }
 
+      it 'single is not null condition, result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'employee_id': '!null'
+        }, config)).to.deep.equal {
+          where: 'tasks."employee_id" is not null'
+          params: []
+          relations: []
+        }
+
       it 'single is null condition, result should be as expected', ->
         expect(QueryGenerator._toWhere({
           employee_id: null
@@ -281,6 +290,15 @@ describe 'Query generator', ->
           employee_name: null
         }, config)).to.deep.equal {
           where: 'employees."name" is null'
+          params: []
+          relations: [ 'employee' ]
+        }
+
+      it 'single is not null column of an relation condition, result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          employee_name: '!null'
+        }, config)).to.deep.equal {
+          where: 'employees."name" is not null'
           params: []
           relations: [ 'employee' ]
         }
@@ -572,6 +590,7 @@ describe 'Query generator', ->
           employee_name: 'Luiz Freneda'
           service_id: null
           customer_id: [15,'null']
+          created_at: '!null'
           'created_at>': '2015-05-15'
           'updated_at<': '2017-05-15'
           'created_at>=': 'employee.created_at'
@@ -598,6 +617,7 @@ describe 'Query generator', ->
               AND employees."name" = $5
               AND tasks."service_id" is null
               AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+              AND tasks."created_at" is not null
               AND tasks."created_at" > $7
               AND tasks."updated_at" < $8
               AND tasks."created_at" >= employees."created_at";
@@ -613,6 +633,7 @@ describe 'Query generator', ->
             AND employees."name" = $5
             AND tasks."service_id" is null
             AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+            AND tasks."created_at" is not null
             AND tasks."created_at" > $7
             AND tasks."updated_at" < $8
             AND tasks."created_at" >= employees."created_at"
@@ -639,6 +660,7 @@ describe 'Query generator', ->
               AND employees."name" = $5
               AND tasks."service_id" is null
               AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+              AND tasks."created_at" is not null
               AND tasks."created_at" > $7
               AND tasks."updated_at" < $8
               AND tasks."created_at" >= employees."created_at"
