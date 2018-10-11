@@ -1,6 +1,6 @@
 {
   "name": "katy-query",
-  "version": "4.4.4",
+  "version": "4.4.5",
   "description": "KatyQuery :microphone: is a query builder for PostgreSQL",
   "main": "dist/index.js",
   "scripts": {
