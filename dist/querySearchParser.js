@@ -42,6 +42,25 @@
       return options;
     };
 
+    QuerySearchParser.validate = function(whereObject, config) {
+      var errors, key;
+      errors = [];
+      for (key in whereObject) {
+        if (config.search && config.search[key] && config.search[key].pattern) {
+          if (!whereObject[key].match(config.search[key].pattern)) {
+            errors.push({
+              property: key,
+              message: "must match " + config.search[key].pattern
+            });
+          }
+        }
+      }
+      return {
+        isValid: _.isEmpty(errors),
+        errors: errors
+      };
+    };
+
     return QuerySearchParser;
 
   })();

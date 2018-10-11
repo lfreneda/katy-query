@@ -14,6 +14,11 @@ describe 'Query Search Parser', ->
         },
         employee: {
           column: 'employee_id'
+          pattern: /^\d+$/
+        },
+        scheduledDate: {
+          column: 'date'
+          pattern: /^\d{4}-\d{2}-\d{2}$/
         },
         'description~~*': {
         }
@@ -36,8 +41,7 @@ describe 'Query Search Parser', ->
       }
     }
 
-  describe 'given query syntax', ->
-
+  describe 'Parse query syntax', ->
     whereObject = null
     beforeEach ->
       whereObject = QuerySearchParser.parse 'employee:1,2,null description~~*:"*Something here*" service_id:1', config
@@ -53,3 +57,61 @@ describe 'Query Search Parser', ->
         'employee': [ '1', '2', 'null' ]
         'description~~*': '%Something here%'
       }
+
+  describe 'Validate object', ->
+
+    it 'given valid object expects to be valid', ->
+      validateResult = QuerySearchParser.validate { 
+        scheduledDate: '1995-05-28' 
+      }, config
+      expect(validateResult.isValid).to.equal true
+      expect(validateResult.errors).to.deep.equal []
+
+    it 'given valid object with many properties expects to be valid', ->
+      validateResult = QuerySearchParser.validate { 
+        scheduledDate: '1995-05-28'
+        employee: '1253'
+      }, config
+      expect(validateResult.isValid).to.equal true
+      expect(validateResult.errors).to.deep.equal []
+
+    it 'given invalid object expects to be invalid', ->
+      validateResult = QuerySearchParser.validate { 
+        scheduledDate: 'Invalid date' 
+      }, config
+      expect(validateResult.isValid).to.equal false
+      expect(validateResult.errors).to.deep.equal [
+        {
+          message: 'must match /^\\d{4}-\\d{2}-\\d{2}$/'
+          property: 'scheduledDate'
+        }
+      ]
+
+    it 'given invalid object with many properties expects to be invalid', ->
+      validateResult = QuerySearchParser.validate { 
+        scheduledDate: 'Invalid date'
+        employee: 'abs'
+      }, config
+      expect(validateResult.isValid).to.equal false
+      expect(validateResult.errors).to.deep.equal [
+        {
+          message: 'must match /^\\d{4}-\\d{2}-\\d{2}$/'
+          property: 'scheduledDate'
+        }
+        {
+          message: 'must match /^\\d+$/'
+          property: 'employee'
+        }
+      ]
+      
+    it 'given valid object with invalid propertie expects to be valid ', ->
+      validateResult = QuerySearchParser.validate { 
+        nome: 'Teste Nome'
+      }, config
+      expect(validateResult.isValid).to.equal true
+      expect(validateResult.errors).to.deep.equal []
+          
+    it 'given invalid object with no config', ->
+      validateResult = QuerySearchParser.validate { scheduledDate: 'Invalid date' }, {}
+      expect(validateResult.isValid).to.equal true
+      expect(validateResult.errors).to.deep.equal []
