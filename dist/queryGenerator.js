@@ -149,6 +149,9 @@ return lastIndex !== -1 && lastIndex === position;
     QueryGenerator._getWhereOperator = function(field) {
       var operatorHandler, operators;
       operators = {
+        notEqualOperator: {
+          operator: '<>'
+        },
         greaterOrEqualThanOperator: {
           operator: '>='
         },
@@ -170,6 +173,8 @@ return lastIndex !== -1 && lastIndex === position;
       };
       operatorHandler = (function() {
         switch (false) {
+          case !field.endsWith('<>'):
+            return operators.notEqualOperator;
           case !field.endsWith('>='):
             return operators.greaterOrEqualThanOperator;
           case !field.endsWith('>'):
