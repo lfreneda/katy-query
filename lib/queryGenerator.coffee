@@ -130,6 +130,7 @@ class QueryGenerator
 
   @_getWhereOperator: (field) ->
     operators = {
+      notEqualOperator: { operator: '<>' }
       greaterOrEqualThanOperator: { operator: '>=' }
       greaterThanOperator: { operator: '>' }
       lessOrEqualThanOperator: { operator: '<=' }
@@ -139,6 +140,7 @@ class QueryGenerator
     }
 
     operatorHandler = switch
+      when field.endsWith '<>' then operators.notEqualOperator
       when field.endsWith '>=' then operators.greaterOrEqualThanOperator
       when field.endsWith '>' then operators.greaterThanOperator
       when field.endsWith '<=' then operators.lessOrEqualThanOperator

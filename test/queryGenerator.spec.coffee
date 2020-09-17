@@ -312,6 +312,15 @@ describe 'Query generator', ->
           relations: []
         }
 
+       it 'single not equal condition, result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'employee_id<>': 15
+        }, config)).to.deep.equal {
+          where: 'tasks."employee_id" <> $1'
+          params: [ 15 ]
+          relations: []
+        }
+
       it 'single greater or equal than column of an relation condition, result should be as expected', ->
         expect(QueryGenerator._toWhere({
           'employee_name>=': 15
