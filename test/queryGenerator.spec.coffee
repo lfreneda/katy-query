@@ -24,7 +24,22 @@ config = {
     }
     status: {
       mapper: 'task_status_from_name_to_ordinal'
+    },
+
+    'employee_id&&': {
+      column: 'employee_id'
     }
+
+    'employee.account.tags.label': {
+      column: 'label'
+      relation: 'employee.account.tags'
+    }
+
+    'employee.account.tags.label&&': {
+      column: 'label'
+      relation: 'employee.account.tags'
+    }
+
     hired_at: {
       relation: 'employee'
       column: 'hired_at'
@@ -142,7 +157,7 @@ describe 'Query generator', ->
 
     it 'simple (with no relation)', ->
       expect(QueryGenerator._toJoinSql([], config)).to.equal ''
-      
+
     it 'with provided relation', ->
       expect(QueryGenerator._toJoinSql(['employee'], config)).to.equal '
         LEFT JOIN employees ON tasks.employee_id = employees.id
@@ -157,7 +172,7 @@ describe 'Query generator', ->
 
     it 'with provided relation which requires previous relation [2]', ->
       expect(QueryGenerator._toJoinSql(['employee.account'], config)).to.equal '
-        LEFT JOIN employees ON tasks.employee_id = employees.id 
+        LEFT JOIN employees ON tasks.employee_id = employees.id
         LEFT JOIN accounts ON accounts.id = employees.account_id
       '
 
@@ -199,7 +214,7 @@ describe 'Query generator', ->
         }
 
     describe 'basic comparison', ->
-      
+
       it 'single equal condition, result should be as expected', ->
         expect(QueryGenerator._toWhere({
           employee_id: 1
@@ -319,6 +334,24 @@ describe 'Query generator', ->
           where: 'tasks."employee_id" <> $1'
           params: [ 15 ]
           relations: []
+        }
+
+        it 'single and condition, result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'employee_id&&': 15
+        }, config)).to.deep.equal {
+          where: 'tasks."employee_id" = $1'
+          params: [ 15 ]
+          relations: []
+        }
+
+        it 'single and condition with search configured, result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'employee.account.tags.label&&': 'pro'
+        }, config)).to.deep.equal {
+          where: 'accounts_tags."label" = $1'
+          params: [ 'pro' ]
+          relations: [ 'employee.account.tags']
         }
 
       it 'single greater or equal than column of an relation condition, result should be as expected', ->
@@ -464,6 +497,28 @@ describe 'Query generator', ->
           params: [ 1, 3, 2 ]
           relations: []
         }
+
+      it 'single and condition, result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'employee_id&&': [1,3,2]
+        }, config)).to.deep.equal {
+          where: 'tasks."employee_id" = $1 AND tasks."employee_id" = $2 AND tasks."employee_id" = $3'
+          params: [ 1, 3, 2 ]
+          relations: []
+        }
+
+      it 'single and condition, with search config result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'employee.account.tags.label&&': ['pro','needs-train']
+        }, config)).to.deep.equal {
+          where: 'accounts_tags."label" = $1 AND accounts_tags."label" = $2'
+          params: ['pro','needs-train']
+          relations: ['employee.account.tags']
+
+        }
+
+
+
 
       it 'single in condition with mapper configured, result should be as expected', ->
         expect(QueryGenerator._toWhere({

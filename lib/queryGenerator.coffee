@@ -33,24 +33,24 @@ class QueryGenerator
                   COUNT(DISTINCT #{config.table}.\"id\")
                  FROM #{config.from || config.table}
                   #{joins}
-                 WHERE 
+                 WHERE
                  #{whereResult.where};"
 
       sqlSelectIds: "SELECT #{config.table}.\"id\"
                      FROM #{config.from || config.table}
                      #{joins}
-                     WHERE 
-                     #{whereResult.where} 
+                     WHERE
+                     #{whereResult.where}
                      GROUP BY #{config.table}.\"id\"
-                     #{sortOptions} 
+                     #{sortOptions}
                      #{pageOptions};"
 
       sqlSelect: "SELECT #{columns}
                   FROM #{config.from || config.table}
                   #{joins}
-                  WHERE 
-                  #{whereResult.where} 
-                  #{sortOptions} 
+                  WHERE
+                  #{whereResult.where}
+                  #{sortOptions}
                   #{pageOptions};"
 
       params: whereResult.params
@@ -119,28 +119,30 @@ class QueryGenerator
     if @_isSearchField(configuration, value)
       comparedFieldConfig = @_getFieldConfigurationOrDefault configuration, value, result
       comparedColumnName = "#{comparedFieldConfig.table}.\"#{comparedFieldConfig.column}\""
-      result.where.push "#{columnName} #{fieldOperator.operator} #{comparedColumnName}"
+      result.where.push "#{columnName} #{fieldOperator.mappedOperator} #{comparedColumnName}"
     else
       columnName = fieldConfig.format.replace('{{column}}', columnName) if fieldConfig.format
       result.params.push fieldConfig.mapper(value)
-      result.where.push "#{columnName} #{fieldOperator.operator} $#{result.params.length}"
+      result.where.push "#{columnName} #{fieldOperator.mappedOperator} $#{result.params.length}"
 
   @_isSearchField: (config, value) ->
     if config.search[value] then yes else no
 
   @_getWhereOperator: (field) ->
     operators = {
-      notEqualOperator: { operator: '<>' }
-      greaterOrEqualThanOperator: { operator: '>=' }
-      greaterThanOperator: { operator: '>' }
-      lessOrEqualThanOperator: { operator: '<=' }
-      lessThanOperator: { operator: '<' }
-      iLikeOperator: { operator: '~~*' }
-      equalOperator: { operator: '=' }
+      notEqualOperator: { operator: '<>', mappedOperator : '<>' }
+      andOperator: { operator: '&&', mappedOperator : '=' }
+      greaterOrEqualThanOperator: { operator: '>=', mappedOperator: '>=' }
+      greaterThanOperator: { operator: '>', mappedOperator: '>' }
+      lessOrEqualThanOperator: { operator: '<=', mappedOperator: '<=' }
+      lessThanOperator: { operator: '<', mappedOperator: '<' }
+      iLikeOperator: { operator: '~~*', mappedOperator: '~~*' }
+      equalOperator: { operator: '=', mappedOperator: '=' }
     }
 
     operatorHandler = switch
       when field.endsWith '<>' then operators.notEqualOperator
+      when field.endsWith '&&' then operators.andOperator
       when field.endsWith '>=' then operators.greaterOrEqualThanOperator
       when field.endsWith '>' then operators.greaterThanOperator
       when field.endsWith '<=' then operators.lessOrEqualThanOperator
@@ -151,16 +153,29 @@ class QueryGenerator
     operatorHandler
 
   @_whereClauseAsArray: (field, value, result, configuration) ->
-    arrValues = []
     fieldConfig = @_getFieldConfigurationOrDefault configuration, field, result
-    for arrValue in value when arrValue not in ['null', null]
-      result.params.push fieldConfig.mapper(arrValue)
-      arrValues.push "$#{result.params.length}"
-    withNull = 'null' in value or null in value
-    if withNull
-      result.where.push "(#{fieldConfig.table}.\"#{fieldConfig.column}\" in (#{arrValues.join(', ')}) OR #{fieldConfig.table}.\"#{fieldConfig.column}\" is null)"
+    arrValues = []
+
+    if field.endsWith '&&'
+      field = field.replace '&&', ''
+      for arrValue in value
+        if(value in ['null', null])
+          result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" is null"
+        else
+          result.params.push fieldConfig.mapper(arrValue)
+          result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" = $#{result.params.length}"
+
+
     else
-      result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" in (#{arrValues.join(', ')})"
+      for arrValue in value when arrValue not in ['null', null]
+        result.params.push fieldConfig.mapper(arrValue)
+        arrValues.push "$#{result.params.length}"
+
+      withNull = 'null' in value or null in value
+      if withNull
+        result.where.push "(#{fieldConfig.table}.\"#{fieldConfig.column}\" in (#{arrValues.join(', ')}) OR #{fieldConfig.table}.\"#{fieldConfig.column}\" is null)"
+      else
+        result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" in (#{arrValues.join(', ')})"
 
   @_whereNullClause: (field, value, result, configuration) ->
     fieldConfig = @_getFieldConfigurationOrDefault configuration, field, result

@@ -128,13 +128,13 @@ return lastIndex !== -1 && lastIndex === position;
       if (this._isSearchField(configuration, value)) {
         comparedFieldConfig = this._getFieldConfigurationOrDefault(configuration, value, result);
         comparedColumnName = comparedFieldConfig.table + ".\"" + comparedFieldConfig.column + "\"";
-        return result.where.push(columnName + " " + fieldOperator.operator + " " + comparedColumnName);
+        return result.where.push(columnName + " " + fieldOperator.mappedOperator + " " + comparedColumnName);
       } else {
         if (fieldConfig.format) {
           columnName = fieldConfig.format.replace('{{column}}', columnName);
         }
         result.params.push(fieldConfig.mapper(value));
-        return result.where.push(columnName + " " + fieldOperator.operator + " $" + result.params.length);
+        return result.where.push(columnName + " " + fieldOperator.mappedOperator + " $" + result.params.length);
       }
     };
 
@@ -150,31 +150,44 @@ return lastIndex !== -1 && lastIndex === position;
       var operatorHandler, operators;
       operators = {
         notEqualOperator: {
-          operator: '<>'
+          operator: '<>',
+          mappedOperator: '<>'
+        },
+        andOperator: {
+          operator: '&&',
+          mappedOperator: '='
         },
         greaterOrEqualThanOperator: {
-          operator: '>='
+          operator: '>=',
+          mappedOperator: '>='
         },
         greaterThanOperator: {
-          operator: '>'
+          operator: '>',
+          mappedOperator: '>'
         },
         lessOrEqualThanOperator: {
-          operator: '<='
+          operator: '<=',
+          mappedOperator: '<='
         },
         lessThanOperator: {
-          operator: '<'
+          operator: '<',
+          mappedOperator: '<'
         },
         iLikeOperator: {
-          operator: '~~*'
+          operator: '~~*',
+          mappedOperator: '~~*'
         },
         equalOperator: {
-          operator: '='
+          operator: '=',
+          mappedOperator: '='
         }
       };
       operatorHandler = (function() {
         switch (false) {
           case !field.endsWith('<>'):
             return operators.notEqualOperator;
+          case !field.endsWith('&&'):
+            return operators.andOperator;
           case !field.endsWith('>='):
             return operators.greaterOrEqualThanOperator;
           case !field.endsWith('>'):
@@ -193,22 +206,37 @@ return lastIndex !== -1 && lastIndex === position;
     };
 
     QueryGenerator._whereClauseAsArray = function(field, value, result, configuration) {
-      var arrValue, arrValues, fieldConfig, i, len, withNull;
-      arrValues = [];
+      var arrValue, arrValues, fieldConfig, i, j, len, len1, results, withNull;
       fieldConfig = this._getFieldConfigurationOrDefault(configuration, field, result);
-      for (i = 0, len = value.length; i < len; i++) {
-        arrValue = value[i];
-        if (!(arrValue !== 'null' && arrValue !== null)) {
-          continue;
+      arrValues = [];
+      if (field.endsWith('&&')) {
+        field = field.replace('&&', '');
+        results = [];
+        for (i = 0, len = value.length; i < len; i++) {
+          arrValue = value[i];
+          if ((value === 'null' || value === null)) {
+            results.push(result.where.push(fieldConfig.table + ".\"" + fieldConfig.column + "\" is null"));
+          } else {
+            result.params.push(fieldConfig.mapper(arrValue));
+            results.push(result.where.push(fieldConfig.table + ".\"" + fieldConfig.column + "\" = $" + result.params.length));
+          }
         }
-        result.params.push(fieldConfig.mapper(arrValue));
-        arrValues.push("$" + result.params.length);
-      }
-      withNull = indexOf.call(value, 'null') >= 0 || indexOf.call(value, null) >= 0;
-      if (withNull) {
-        return result.where.push("(" + fieldConfig.table + ".\"" + fieldConfig.column + "\" in (" + (arrValues.join(', ')) + ") OR " + fieldConfig.table + ".\"" + fieldConfig.column + "\" is null)");
+        return results;
       } else {
-        return result.where.push(fieldConfig.table + ".\"" + fieldConfig.column + "\" in (" + (arrValues.join(', ')) + ")");
+        for (j = 0, len1 = value.length; j < len1; j++) {
+          arrValue = value[j];
+          if (!(arrValue !== 'null' && arrValue !== null)) {
+            continue;
+          }
+          result.params.push(fieldConfig.mapper(arrValue));
+          arrValues.push("$" + result.params.length);
+        }
+        withNull = indexOf.call(value, 'null') >= 0 || indexOf.call(value, null) >= 0;
+        if (withNull) {
+          return result.where.push("(" + fieldConfig.table + ".\"" + fieldConfig.column + "\" in (" + (arrValues.join(', ')) + ") OR " + fieldConfig.table + ".\"" + fieldConfig.column + "\" is null)");
+        } else {
+          return result.where.push(fieldConfig.table + ".\"" + fieldConfig.column + "\" in (" + (arrValues.join(', ')) + ")");
+        }
       }
     };
 
