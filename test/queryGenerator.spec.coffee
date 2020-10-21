@@ -394,6 +394,30 @@ describe 'Query generator', ->
           relations: []
         }
 
+      it 'multiples ilike column of an relation condition (when configured), result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'employee_name~~*': ['Luiz%', '%Vinícius%']
+        }, config)).to.deep.equal {
+          where: 'employees."name" LIKE ANY(ARRAY[$1, $2])'
+          params: [
+            'Luiz%',
+            '%Vinícius%'
+          ]
+          relations: [ 'employee' ]
+        }
+
+      it 'multiples ilike column and has null of an relation condition (when configured), result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'employee_name~~*': ['Luiz%', '%Vinícius%', null]
+        }, config)).to.deep.equal {
+          where: '(employees.\"name\" LIKE ANY(ARRAY[$1, $2]) OR employees.\"name\" is null)'
+          params: [
+            'Luiz%',
+            '%Vinícius%'
+          ]
+          relations: [ 'employee' ]
+        }
+
     describe 'comparison between search fields', ->
 
       # FIXME: Isso é bad, bater no banco com uma syntax errada de tipo de dado
@@ -603,8 +627,9 @@ describe 'Query generator', ->
           'created_at>': '2015-05-15'
           'updated_at<': '2017-05-15'
           'created_at>=': 'employee.created_at'
+          'employee_name~~*': ['Luiz%', '%Vinícius%']
         },
-        options:  {
+        options: {
           sort: '-description',
           offset: 15,
           limit: 28,
@@ -629,7 +654,8 @@ describe 'Query generator', ->
               AND tasks."created_at" is not null
               AND tasks."created_at" > $7
               AND tasks."updated_at" < $8
-              AND tasks."created_at" >= employees."created_at";
+              AND tasks."created_at" >= employees."created_at"
+              AND employees."name" LIKE ANY(ARRAY[$9, $10]);
         '
 
         sqlSelectIds: '
@@ -646,6 +672,7 @@ describe 'Query generator', ->
             AND tasks."created_at" > $7
             AND tasks."updated_at" < $8
             AND tasks."created_at" >= employees."created_at"
+            AND employees."name" LIKE ANY(ARRAY[$9, $10])
             GROUP BY tasks."id"
             ORDER BY tasks."description" DESC
             OFFSET 15 LIMIT 28;
@@ -673,10 +700,11 @@ describe 'Query generator', ->
               AND tasks."created_at" > $7
               AND tasks."updated_at" < $8
               AND tasks."created_at" >= employees."created_at"
+              AND employees."name" LIKE ANY(ARRAY[$9, $10])
             ORDER BY tasks."description" DESC
             OFFSET 15 LIMIT 28;
         '
 
-        params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15' ]
+        params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15', 'Luiz%', '%Vinícius%' ]
         relations: [ 'employee' ]
       }

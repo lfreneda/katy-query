@@ -11,14 +11,20 @@
     function QuerySearchParser() {}
 
     QuerySearchParser.parse = function(syntaxSearch, config) {
-      var key, parseResult, value;
+      var key, newKey, newValue, parseResult, value;
       parseResult = searchQuery.parse(syntaxSearch, this._toOptions(config));
       delete parseResult.text;
       for (key in parseResult) {
         if (!hasProp.call(parseResult, key)) continue;
         value = parseResult[key];
-        if (_.isString(value)) {
-          parseResult[key] = value.replace(/\*/g, '%');
+        if (_.isArray(value)) {
+          for (newKey in value) {
+            if (!hasProp.call(value, newKey)) continue;
+            newValue = value[newKey];
+            parseResult[key][newKey] = this._replace(newValue);
+          }
+        } else {
+          parseResult[key] = this._replace(value);
         }
       }
       return parseResult;
@@ -40,6 +46,12 @@
         })()
       };
       return options;
+    };
+
+    QuerySearchParser._replace = function(value) {
+      if (_.isString(value)) {
+        return value.replace(/\*/g, '%');
+      }
     };
 
     QuerySearchParser.validate = function(whereObject, config) {
