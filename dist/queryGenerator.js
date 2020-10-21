@@ -193,8 +193,10 @@ return lastIndex !== -1 && lastIndex === position;
     };
 
     QueryGenerator._whereClauseAsArray = function(field, value, result, configuration) {
-      var arrValue, arrValues, fieldConfig, i, len, withNull;
+      var arrValue, arrValues, fieldConfig, fieldOperator, i, len, whereResult, withNull;
       arrValues = [];
+      fieldOperator = this._getWhereOperator(field);
+      field = field.replace(fieldOperator.operator, '');
       fieldConfig = this._getFieldConfigurationOrDefault(configuration, field, result);
       for (i = 0, len = value.length; i < len; i++) {
         arrValue = value[i];
@@ -205,11 +207,16 @@ return lastIndex !== -1 && lastIndex === position;
         arrValues.push("$" + result.params.length);
       }
       withNull = indexOf.call(value, 'null') >= 0 || indexOf.call(value, null) >= 0;
-      if (withNull) {
-        return result.where.push("(" + fieldConfig.table + ".\"" + fieldConfig.column + "\" in (" + (arrValues.join(', ')) + ") OR " + fieldConfig.table + ".\"" + fieldConfig.column + "\" is null)");
+      whereResult = null;
+      if (fieldOperator.operator === '~~*') {
+        whereResult = fieldConfig.table + ".\"" + fieldConfig.column + "\" LIKE ANY(ARRAY[" + (arrValues.join(', ')) + "])";
       } else {
-        return result.where.push(fieldConfig.table + ".\"" + fieldConfig.column + "\" in (" + (arrValues.join(', ')) + ")");
+        whereResult = fieldConfig.table + ".\"" + fieldConfig.column + "\" in (" + (arrValues.join(', ')) + ")";
       }
+      if (withNull) {
+        whereResult = "(" + whereResult + " OR " + fieldConfig.table + ".\"" + fieldConfig.column + "\" is null)";
+      }
+      return result.where.push(whereResult);
     };
 
     QueryGenerator._whereNullClause = function(field, value, result, configuration) {

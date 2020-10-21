@@ -12,6 +12,10 @@ describe 'Query Search Parser', ->
           relation: 'employee'
           column: 'name'
         },
+        'employee_name~~*': {
+          relation: 'employee'
+          column: 'name'
+        },
         employee: {
           column: 'employee_id'
           pattern: /^\d+$/
@@ -44,18 +48,20 @@ describe 'Query Search Parser', ->
   describe 'Parse query syntax', ->
     whereObject = null
     beforeEach ->
-      whereObject = QuerySearchParser.parse 'employee:1,2,null description~~*:"*Something here*" service_id:1', config
+      whereObject = QuerySearchParser.parse 'employee:1,2,null description~~*:"*Something here*" employee_name~~*:"Luiz*,*Vinícius*,Field,*Control,null" service_id:1', config
 
     it 'not configured search terms should be ignored', ->
       expect(whereObject.service_id).to.be.undefined
 
     it 'should replace * char to %', ->
       expect(whereObject['description~~*']).to.equal '%Something here%'
+      expect(whereObject['employee_name~~*']).to.deep.equal [ 'Luiz%', '%Vinícius%', 'Field', '%Control', 'null' ]
 
     it 'result should be as expected (only configured terms)', ->
       expect(whereObject).to.deep.equal {
         'employee': [ '1', '2', 'null' ]
-        'description~~*': '%Something here%'
+        'description~~*': '%Something here%',
+        'employee_name~~*': [ 'Luiz%', '%Vinícius%', 'Field', '%Control', 'null' ]
       }
 
   describe 'Validate object', ->

@@ -152,15 +152,24 @@ class QueryGenerator
 
   @_whereClauseAsArray: (field, value, result, configuration) ->
     arrValues = []
+    fieldOperator = @_getWhereOperator field
+    field = field.replace fieldOperator.operator, ''
     fieldConfig = @_getFieldConfigurationOrDefault configuration, field, result
     for arrValue in value when arrValue not in ['null', null]
       result.params.push fieldConfig.mapper(arrValue)
       arrValues.push "$#{result.params.length}"
     withNull = 'null' in value or null in value
-    if withNull
-      result.where.push "(#{fieldConfig.table}.\"#{fieldConfig.column}\" in (#{arrValues.join(', ')}) OR #{fieldConfig.table}.\"#{fieldConfig.column}\" is null)"
+
+    whereResult = null
+    if fieldOperator.operator == '~~*'
+      whereResult = "#{fieldConfig.table}.\"#{fieldConfig.column}\" LIKE ANY(ARRAY[#{arrValues.join(', ')}])"
     else
-      result.where.push "#{fieldConfig.table}.\"#{fieldConfig.column}\" in (#{arrValues.join(', ')})"
+      whereResult = "#{fieldConfig.table}.\"#{fieldConfig.column}\" in (#{arrValues.join(', ')})"
+
+    if withNull
+      whereResult = "(#{whereResult} OR #{fieldConfig.table}.\"#{fieldConfig.column}\" is null)"
+
+    result.where.push whereResult
 
   @_whereNullClause: (field, value, result, configuration) ->
     fieldConfig = @_getFieldConfigurationOrDefault configuration, field, result

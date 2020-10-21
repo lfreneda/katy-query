@@ -6,12 +6,19 @@ class QuerySearchParser
     parseResult = searchQuery.parse syntaxSearch, @_toOptions(config)
     delete parseResult.text
     for own key, value of parseResult
-      parseResult[key] = value.replace /\*/g,'%' if _.isString value
+      if _.isArray value
+        for own newKey, newValue of value
+          parseResult[key][newKey] = @_replace(newValue)
+      else
+        parseResult[key] = @_replace(value)
     parseResult
 
   @_toOptions: (config) ->
     options = { keywords: (key for own key, value of config.search) }
     options
+
+  @_replace: (value) ->
+    value.replace /\*/g,'%' if _.isString value
 
   @validate: (whereObject, config) ->
     errors = []
@@ -20,7 +27,7 @@ class QuerySearchParser
         if not whereObject[key].match config.search[key].pattern
           errors.push {
             property: key
-            message: "must match #{config.search[key].pattern}"  
+            message: "must match #{config.search[key].pattern}"
           }
           
     return {
