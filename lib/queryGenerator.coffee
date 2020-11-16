@@ -16,6 +16,17 @@ return lastIndex !== -1 && lastIndex === position;
 `
 class QueryGenerator
 
+  @_operators: {
+      notEqualOperator: { operator: '<>' },
+      greaterOrEqualThanOperator: { operator: '>=' },
+      greaterThanOperator: { operator: '>' },
+      lessOrEqualThanOperator: { operator: '<=' },
+      lessThanOperator: { operator: '<' },
+      iNotLikeOperator: { operator: '!~~*' },
+      iLikeOperator: { operator: '~~*' },
+      equalOperator: { operator: '=' }
+    }
+
   @toSql: (args, config) ->
 
     whereResult = @_toWhere(args.where, config, args.options)
@@ -31,19 +42,19 @@ class QueryGenerator
 
       sqlCount: "SELECT
                   COUNT(DISTINCT #{config.table}.\"id\")
-                 FROM #{config.from || config.table}
+                FROM #{config.from || config.table}
                   #{joins}
-                 WHERE 
-                 #{whereResult.where};"
+                WHERE 
+                #{whereResult.where};"
 
       sqlSelectIds: "SELECT #{config.table}.\"id\"
-                     FROM #{config.from || config.table}
-                     #{joins}
-                     WHERE 
-                     #{whereResult.where} 
-                     GROUP BY #{config.table}.\"id\"
-                     #{sortOptions} 
-                     #{pageOptions};"
+                    FROM #{config.from || config.table}
+                    #{joins}
+                    WHERE 
+                    #{whereResult.where} 
+                    GROUP BY #{config.table}.\"id\"
+                    #{sortOptions} 
+                    #{pageOptions};"
 
       sqlSelect: "SELECT #{columns}
                   FROM #{config.from || config.table}
@@ -129,24 +140,15 @@ class QueryGenerator
     if config.search[value] then yes else no
 
   @_getWhereOperator: (field) ->
-    operators = {
-      notEqualOperator: { operator: '<>' }
-      greaterOrEqualThanOperator: { operator: '>=' }
-      greaterThanOperator: { operator: '>' }
-      lessOrEqualThanOperator: { operator: '<=' }
-      lessThanOperator: { operator: '<' }
-      iLikeOperator: { operator: '~~*' }
-      equalOperator: { operator: '=' }
-    }
-
     operatorHandler = switch
-      when field.endsWith '<>' then operators.notEqualOperator
-      when field.endsWith '>=' then operators.greaterOrEqualThanOperator
-      when field.endsWith '>' then operators.greaterThanOperator
-      when field.endsWith '<=' then operators.lessOrEqualThanOperator
-      when field.endsWith '<' then operators.lessThanOperator
-      when field.endsWith '~~*' then operators.iLikeOperator
-      else operators.equalOperator
+      when field.endsWith '<>' then @_operators.notEqualOperator
+      when field.endsWith '>=' then @_operators.greaterOrEqualThanOperator
+      when field.endsWith '>' then @_operators.greaterThanOperator
+      when field.endsWith '<=' then @_operators.lessOrEqualThanOperator
+      when field.endsWith '<' then @_operators.lessThanOperator
+      when field.endsWith '!~~*' then @_operators.iNotLikeOperator
+      when field.endsWith '~~*' then @_operators.iLikeOperator
+      else @_operators.equalOperator
 
     operatorHandler
 
@@ -161,8 +163,12 @@ class QueryGenerator
     withNull = 'null' in value or null in value
 
     whereResult = null
-    if fieldOperator.operator == '~~*'
+    if fieldOperator.operator == @_operators.iLikeOperator.operator
       whereResult = "#{fieldConfig.table}.\"#{fieldConfig.column}\" LIKE ANY(ARRAY[#{arrValues.join(', ')}])"
+    else if fieldOperator.operator == @_operators.iNotLikeOperator.operator
+      whereResult = "#{fieldConfig.table}.\"#{fieldConfig.column}\" NOT LIKE ANY(ARRAY[#{arrValues.join(', ')}])"
+    else if fieldOperator.operator == @_operators.notEqualOperator.operator
+      whereResult = "#{fieldConfig.table}.\"#{fieldConfig.column}\" NOT IN (#{arrValues.join(', ')})"
     else
       whereResult = "#{fieldConfig.table}.\"#{fieldConfig.column}\" in (#{arrValues.join(', ')})"
 

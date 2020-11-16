@@ -25,6 +25,33 @@ return lastIndex !== -1 && lastIndex === position;
   QueryGenerator = (function() {
     function QueryGenerator() {}
 
+    QueryGenerator._operators = {
+      notEqualOperator: {
+        operator: '<>'
+      },
+      greaterOrEqualThanOperator: {
+        operator: '>='
+      },
+      greaterThanOperator: {
+        operator: '>'
+      },
+      lessOrEqualThanOperator: {
+        operator: '<='
+      },
+      lessThanOperator: {
+        operator: '<'
+      },
+      iNotLikeOperator: {
+        operator: '!~~*'
+      },
+      iLikeOperator: {
+        operator: '~~*'
+      },
+      equalOperator: {
+        operator: '='
+      }
+    };
+
     QueryGenerator.toSql = function(args, config) {
       var columns, joins, pageOptions, relations, sortOptions, whereResult;
       whereResult = this._toWhere(args.where, config, args.options);
@@ -147,48 +174,27 @@ return lastIndex !== -1 && lastIndex === position;
     };
 
     QueryGenerator._getWhereOperator = function(field) {
-      var operatorHandler, operators;
-      operators = {
-        notEqualOperator: {
-          operator: '<>'
-        },
-        greaterOrEqualThanOperator: {
-          operator: '>='
-        },
-        greaterThanOperator: {
-          operator: '>'
-        },
-        lessOrEqualThanOperator: {
-          operator: '<='
-        },
-        lessThanOperator: {
-          operator: '<'
-        },
-        iLikeOperator: {
-          operator: '~~*'
-        },
-        equalOperator: {
-          operator: '='
-        }
-      };
+      var operatorHandler;
       operatorHandler = (function() {
         switch (false) {
           case !field.endsWith('<>'):
-            return operators.notEqualOperator;
+            return this._operators.notEqualOperator;
           case !field.endsWith('>='):
-            return operators.greaterOrEqualThanOperator;
+            return this._operators.greaterOrEqualThanOperator;
           case !field.endsWith('>'):
-            return operators.greaterThanOperator;
+            return this._operators.greaterThanOperator;
           case !field.endsWith('<='):
-            return operators.lessOrEqualThanOperator;
+            return this._operators.lessOrEqualThanOperator;
           case !field.endsWith('<'):
-            return operators.lessThanOperator;
+            return this._operators.lessThanOperator;
+          case !field.endsWith('!~~*'):
+            return this._operators.iNotLikeOperator;
           case !field.endsWith('~~*'):
-            return operators.iLikeOperator;
+            return this._operators.iLikeOperator;
           default:
-            return operators.equalOperator;
+            return this._operators.equalOperator;
         }
-      })();
+      }).call(this);
       return operatorHandler;
     };
 
@@ -208,8 +214,12 @@ return lastIndex !== -1 && lastIndex === position;
       }
       withNull = indexOf.call(value, 'null') >= 0 || indexOf.call(value, null) >= 0;
       whereResult = null;
-      if (fieldOperator.operator === '~~*') {
+      if (fieldOperator.operator === this._operators.iLikeOperator.operator) {
         whereResult = fieldConfig.table + ".\"" + fieldConfig.column + "\" LIKE ANY(ARRAY[" + (arrValues.join(', ')) + "])";
+      } else if (fieldOperator.operator === this._operators.iNotLikeOperator.operator) {
+        whereResult = fieldConfig.table + ".\"" + fieldConfig.column + "\" NOT LIKE ANY(ARRAY[" + (arrValues.join(', ')) + "])";
+      } else if (fieldOperator.operator === this._operators.notEqualOperator.operator) {
+        whereResult = fieldConfig.table + ".\"" + fieldConfig.column + "\" NOT IN (" + (arrValues.join(', ')) + ")";
       } else {
         whereResult = fieldConfig.table + ".\"" + fieldConfig.column + "\" in (" + (arrValues.join(', ')) + ")";
       }
