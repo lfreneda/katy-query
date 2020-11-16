@@ -162,7 +162,6 @@ describe 'Query generator', ->
       '
 
   describe 'Where', ->
-
     it 'when conditions is null', ->
       expect(QueryGenerator._toWhere(null, config)).to.deep.equal { where: '1=1', params: [], relations: [] }
 
@@ -199,7 +198,6 @@ describe 'Query generator', ->
         }
 
     describe 'basic comparison', ->
-      
       it 'single equal condition, result should be as expected', ->
         expect(QueryGenerator._toWhere({
           employee_id: 1
@@ -267,6 +265,17 @@ describe 'Query generator', ->
           relations: [ 'employee' ]
         }
 
+      it 'single ilike column of an relation condition (when configured), result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'employee_name!~~*': 'Vinícius'
+        }, config)).to.deep.equal {
+          where: 'employees."name" !~~* $1'
+          params: [
+            'Vinícius'
+          ]
+          relations: [ 'employee' ]
+        }
+
       it 'single is not null condition, result should be as expected', ->
         expect(QueryGenerator._toWhere({
           'employee_id': '!null'
@@ -312,7 +321,7 @@ describe 'Query generator', ->
           relations: []
         }
 
-       it 'single not equal condition, result should be as expected', ->
+      it 'single not equal condition, result should be as expected', ->
         expect(QueryGenerator._toWhere({
           'employee_id<>': 15
         }, config)).to.deep.equal {
@@ -414,6 +423,32 @@ describe 'Query generator', ->
           params: [
             'Luiz%',
             '%Vinícius%'
+          ]
+          relations: [ 'employee' ]
+        }
+
+      it 'multiples not ilike column of an relation condition (when configured), result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'employee_name!~~*': ['Katy%', '%Query']
+        }, config)).to.deep.equal {
+          where: 'employees."name" NOT LIKE ANY(ARRAY[$1, $2])'
+          params: [
+            'Katy%',
+            '%Query'
+          ]
+          relations: [ 'employee' ]
+        }
+
+      it 'multiples not in column of an relation condition (when configured), result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'employee_name<>': ['Katy', 'Query', 'SQL', 'builder']
+        }, config)).to.deep.equal {
+          where: 'employees."name" NOT IN ($1, $2, $3, $4)'
+          params: [
+            'Katy',
+            'Query',
+            'SQL',
+            'builder'
           ]
           relations: [ 'employee' ]
         }
@@ -546,6 +581,27 @@ describe 'Query generator', ->
           relations: []
         }
 
+      it 'multiples in/notEqual condition, result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'employee_id<>': [5,6,4]
+          customer_id: 1
+        }, config)).to.deep.equal {
+          where: 'tasks."employee_id" NOT IN ($1, $2, $3) AND tasks."customer_id" = $4'
+          params: [ 5, 6, 4, 1 ]
+          relations: []
+        }
+
+      it 'multiples in/notLikeIn condition, result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'employee_id!~~*': [8,9,7]
+          customer_id: 1
+        }, config)).to.deep.equal {
+          where: 'tasks."employee_id" NOT LIKE ANY(ARRAY[$1, $2, $3]) AND tasks."customer_id" = $4'
+          params: [ 8, 9, 7, 1 ]
+          relations: []
+        }
+
+
     describe 'pattern matching', ->
       it.skip 'tbd', ->
 
@@ -628,6 +684,8 @@ describe 'Query generator', ->
           'updated_at<': '2017-05-15'
           'created_at>=': 'employee.created_at'
           'employee_name~~*': ['Luiz%', '%Vinícius%']
+          'employee_name!~~*': ['Katy%', 'Query']
+          'employee_id<>': [4,5]
         },
         options: {
           sort: '-description',
@@ -655,7 +713,9 @@ describe 'Query generator', ->
               AND tasks."created_at" > $7
               AND tasks."updated_at" < $8
               AND tasks."created_at" >= employees."created_at"
-              AND employees."name" LIKE ANY(ARRAY[$9, $10]);
+              AND employees."name" LIKE ANY(ARRAY[$9, $10])
+              AND employees."name" NOT LIKE ANY(ARRAY[$11, $12])
+              AND tasks."employee_id" NOT IN ($13, $14);
         '
 
         sqlSelectIds: '
@@ -664,15 +724,17 @@ describe 'Query generator', ->
             LEFT JOIN employees ON tasks.employee_id = employees.id
             WHERE
                 (tasks."account_id" = $1)
-            AND tasks."employee_id" in ($2, $3, $4)
-            AND employees."name" = $5
-            AND tasks."service_id" is null
-            AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
-            AND tasks."created_at" is not null
-            AND tasks."created_at" > $7
-            AND tasks."updated_at" < $8
-            AND tasks."created_at" >= employees."created_at"
-            AND employees."name" LIKE ANY(ARRAY[$9, $10])
+              AND tasks."employee_id" in ($2, $3, $4)
+              AND employees."name" = $5
+              AND tasks."service_id" is null
+              AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+              AND tasks."created_at" is not null
+              AND tasks."created_at" > $7
+              AND tasks."updated_at" < $8
+              AND tasks."created_at" >= employees."created_at"
+              AND employees."name" LIKE ANY(ARRAY[$9, $10])
+              AND employees."name" NOT LIKE ANY(ARRAY[$11, $12])
+              AND tasks."employee_id" NOT IN ($13, $14)
             GROUP BY tasks."id"
             ORDER BY tasks."description" DESC
             OFFSET 15 LIMIT 28;
@@ -691,7 +753,7 @@ describe 'Query generator', ->
             FROM tasks join orders on orders.id = tasks.order_id
               LEFT JOIN employees ON tasks.employee_id = employees.id
             WHERE
-                  (tasks."account_id" = $1)
+                (tasks."account_id" = $1)
               AND tasks."employee_id" in ($2, $3, $4)
               AND employees."name" = $5
               AND tasks."service_id" is null
@@ -701,10 +763,12 @@ describe 'Query generator', ->
               AND tasks."updated_at" < $8
               AND tasks."created_at" >= employees."created_at"
               AND employees."name" LIKE ANY(ARRAY[$9, $10])
+              AND employees."name" NOT LIKE ANY(ARRAY[$11, $12])
+              AND tasks."employee_id" NOT IN ($13, $14)
             ORDER BY tasks."description" DESC
             OFFSET 15 LIMIT 28;
         '
 
-        params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15', 'Luiz%', '%Vinícius%' ]
+        params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15', 'Luiz%', '%Vinícius%', 'Katy%', 'Query', 4, 5 ]
         relations: [ 'employee' ]
       }
