@@ -53,8 +53,20 @@ return lastIndex !== -1 && lastIndex === position;
     };
 
     QueryGenerator.toSql = function(args, config) {
-      var columns, joins, pageOptions, relations, sortOptions, whereResult;
+      var columns, index, joins, pageOptions, regex, relations, sortOptions, whereResult, whereResultArray, whereTable;
       whereResult = this._toWhere(args.where, config, args.options);
+      regex = RegExp("(?<!" + config.table + ")\\.", "g");
+      whereResultArray = whereResult.where.split(' AND ');
+      whereTable = _.partition(whereResultArray, function(condition) {
+        return condition.search(regex) === -1;
+      });
+      for (index in whereTable) {
+        if (_.isEmpty(whereTable[index])) {
+          whereTable[index] = '1=1';
+        } else {
+          whereTable[index] = "" + (whereTable[index].join(' AND '));
+        }
+      }
       relations = _.uniq(whereResult.relations.concat(args.relations || []));
       joins = this._toJoinSql(relations, config);
       columns = this._toColumnSql(relations, config);
@@ -70,6 +82,7 @@ return lastIndex !== -1 && lastIndex === position;
         sqlCount: "SELECT COUNT(DISTINCT " + config.table + ".\"id\") FROM " + (config.from || config.table) + " " + joins + " WHERE " + whereResult.where + ";",
         sqlSelectIds: "SELECT " + config.table + ".\"id\" FROM " + (config.from || config.table) + " " + joins + " WHERE " + whereResult.where + " GROUP BY " + config.table + ".\"id\" " + sortOptions + " " + pageOptions + ";",
         sqlSelect: "SELECT " + columns + " FROM " + (config.from || config.table) + " " + joins + " WHERE " + whereResult.where + " " + sortOptions + " " + pageOptions + ";",
+        sqlNestedSelect: "SELECT " + columns + " FROM ( SELECT " + config.table + ".* FROM " + (config.from || config.table) + " WHERE " + whereTable[0] + " " + sortOptions + " " + pageOptions + " ) " + config.table + " " + joins + " WHERE " + whereTable[1] + " " + sortOptions + ";",
         params: whereResult.params,
         relations: relations
       };

@@ -769,6 +769,41 @@ describe 'Query generator', ->
             OFFSET 15 LIMIT 28;
         '
 
+        sqlNestedSelect: '
+            SELECT
+              tasks."id" "this.id",
+              COALESCE(tasks."description",\'(none)\') "this.description",
+              tasks."created_at" "this.createdAt",
+              tasks."employee_id" "this.employee.id",
+              employees."id" "this.employee.id",
+              employees."name" "this.employee.name",
+              employees."hired_at" "this.employee.hiredAt",
+              employees."created_at" "this.employee.createdAt"
+            FROM
+              ( SELECT tasks.*
+                FROM tasks
+                join orders on orders.id = tasks.order_id
+                WHERE (tasks."account_id" = $1)
+                  AND tasks."employee_id" in ($2, $3, $4)
+                  AND tasks."service_id" is null
+                  AND (tasks."customer_id" in ($6)
+                    OR tasks."customer_id" is null)
+                  AND tasks."created_at" is not null
+                  AND tasks."created_at" > $7
+                  AND tasks."updated_at" < $8
+                  AND tasks."employee_id" NOT IN ($13, $14)
+                ORDER BY tasks."description" DESC
+                OFFSET 15
+                LIMIT 28
+              ) tasks
+            LEFT JOIN employees ON tasks.employee_id = employees.id
+            WHERE employees."name" = $5
+              AND tasks."created_at" >= employees."created_at"
+              AND employees."name" LIKE ANY(ARRAY[$9, $10])
+              AND employees."name" NOT LIKE ANY(ARRAY[$11, $12])
+            ORDER BY tasks."description" DESC;
+        '
+
         params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15', 'Luiz%', '%Vinícius%', 'Katy%', 'Query', 4, 5 ]
         relations: [ 'employee' ]
       }

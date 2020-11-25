@@ -28,8 +28,18 @@ class QueryGenerator
     }
 
   @toSql: (args, config) ->
-
     whereResult = @_toWhere(args.where, config, args.options)
+
+    regex = ///(?<!#{config.table})\.///g
+    whereResultArray = whereResult.where.split(' AND ')
+    whereTable = _.partition(whereResultArray, (condition) -> condition.search(regex) == -1)
+
+    for index of whereTable
+      if (_.isEmpty(whereTable[index]))
+        whereTable[index] = '1=1'
+      else
+        whereTable[index] = "#{whereTable[index].join(' AND ')}"
+
     relations = _.uniq(whereResult.relations.concat(args.relations || []))
     joins = @_toJoinSql(relations, config)
     columns = @_toColumnSql(relations, config)
@@ -63,6 +73,19 @@ class QueryGenerator
                   #{whereResult.where} 
                   #{sortOptions} 
                   #{pageOptions};"
+
+      sqlNestedSelect: "SELECT #{columns}
+                  FROM (
+                    SELECT #{config.table}.*
+                    FROM #{config.from || config.table}
+                    WHERE #{whereTable[0]}
+                    #{sortOptions}
+                    #{pageOptions}
+                  ) #{config.table}
+                  #{joins}
+                  WHERE 
+                  #{whereTable[1]}
+                  #{sortOptions};"
 
       params: whereResult.params
       relations: relations
