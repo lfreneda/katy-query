@@ -74,17 +74,32 @@ describe 'Query Search Parser', ->
         'employee_id<>': [ "7", "8" ],
       }
 
+    it 'if "where" value has not been specified the "where" key should be undefined', ->
+      whereObject = QuerySearchParser.parse 'employee_id<>: employee_name~~*:""', config
+      expect(whereObject).to.deep.equal {}
+
+    it 'if "where" array contains only empty values the "where" key should be undefined', ->
+      whereObject = QuerySearchParser.parse 'employee_id<>:,,,,, employee_name~~*:",,,,,"', config
+      expect(whereObject).to.deep.equal {}
+
+    it 'if "where" array value contain a value that has not been specified the value should be ignored', ->
+      whereObject = QuerySearchParser.parse 'employee_id<>:1,,2,null, employee_name~~*:",Luiz*,*Vinícius*,Field,*Control,,null"', config
+      expect(whereObject).to.deep.equal {
+        'employee_id<>': [ '1', '2', 'null' ]
+        'employee_name~~*': [ 'Luiz%', '%Vinícius%', 'Field', '%Control', 'null' ]
+      }
+
   describe 'Validate object', ->
 
     it 'given valid object expects to be valid', ->
-      validateResult = QuerySearchParser.validate { 
-        scheduledDate: '1995-05-28' 
+      validateResult = QuerySearchParser.validate {
+        scheduledDate: '1995-05-28'
       }, config
       expect(validateResult.isValid).to.equal true
       expect(validateResult.errors).to.deep.equal []
 
     it 'given valid object with many properties expects to be valid', ->
-      validateResult = QuerySearchParser.validate { 
+      validateResult = QuerySearchParser.validate {
         scheduledDate: '1995-05-28'
         employee: '1253'
       }, config
@@ -92,8 +107,8 @@ describe 'Query Search Parser', ->
       expect(validateResult.errors).to.deep.equal []
 
     it 'given invalid object expects to be invalid', ->
-      validateResult = QuerySearchParser.validate { 
-        scheduledDate: 'Invalid date' 
+      validateResult = QuerySearchParser.validate {
+        scheduledDate: 'Invalid date'
       }, config
       expect(validateResult.isValid).to.equal false
       expect(validateResult.errors).to.deep.equal [
@@ -104,7 +119,7 @@ describe 'Query Search Parser', ->
       ]
 
     it 'given invalid object with many properties expects to be invalid', ->
-      validateResult = QuerySearchParser.validate { 
+      validateResult = QuerySearchParser.validate {
         scheduledDate: 'Invalid date'
         employee: 'abs'
       }, config
@@ -119,14 +134,14 @@ describe 'Query Search Parser', ->
           property: 'employee'
         }
       ]
-      
+
     it 'given valid object with invalid propertie expects to be valid ', ->
-      validateResult = QuerySearchParser.validate { 
+      validateResult = QuerySearchParser.validate {
         nome: 'Teste Nome'
       }, config
       expect(validateResult.isValid).to.equal true
       expect(validateResult.errors).to.deep.equal []
-          
+
     it 'given invalid object with no config', ->
       validateResult = QuerySearchParser.validate { scheduledDate: 'Invalid date' }, {}
       expect(validateResult.isValid).to.equal true

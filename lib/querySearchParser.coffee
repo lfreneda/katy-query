@@ -11,6 +11,10 @@ class QuerySearchParser
           parseResult[key][newKey] = @_replace(newValue)
       else
         parseResult[key] = @_replace(value)
+
+      _.remove parseResult[key], _.isEmpty
+      delete parseResult[key] if parseResult[key].length is 0
+
     parseResult
 
   @_toOptions: (config) ->
@@ -29,7 +33,7 @@ class QuerySearchParser
             property: key
             message: "must match #{config.search[key].pattern}"
           }
-          
+
     return {
       isValid: _.isEmpty(errors)
       errors: errors
