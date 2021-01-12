@@ -26,6 +26,10 @@
         } else {
           parseResult[key] = this._replace(value);
         }
+        _.remove(parseResult[key], _.isEmpty);
+        if (parseResult[key].length === 0) {
+          delete parseResult[key];
+        }
       }
       return parseResult;
     };
