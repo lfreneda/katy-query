@@ -29,12 +29,12 @@ class QueryGenerator
 
   @toSql: (args, config) ->
 
+    args.options = args.options || {}
     whereResult = @_toWhere(args.where, config, args.options)
     relations = _.uniq(whereResult.relations.concat(args.relations || []))
     joins = @_toJoinSql(relations, config)
-    columns = @_toColumnSql(relations, config)
+    columns = @_toColumnSql(relations, config, args.options)
 
-    args.options = args.options || {}
     pageOptions = @_toOptions({ limit: args.options.limit, offset: args.options.offset }, config)
     sortOptions = @_toOptions({ sort: args.options.sort }, config)
 
@@ -210,17 +210,29 @@ class QueryGenerator
 
     fieldConfiguration
 
-  @_toColumnSql: (relations = [], configuration) ->
-    columns = configuration.columns.map (column) ->
+  @_toColumnSql: (relations = [], configuration, options) ->
+    columns = []
+
+    for column in configuration.columns
       columnName = "#{column.table || configuration.table}.\"#{column.name}\""
       columnName = column.format.replace('{{column}}', columnName) if column.format
-      "#{columnName} \"#{column.alias}\""
+
+      if options && options.columns && options.columns.length
+        if column.alias && options.columns.includes(column.alias.replace('this.', ''))
+          columns.push "#{columnName} \"#{column.alias}\""
+      else
+        columns.push "#{columnName} \"#{column.alias}\""
 
     @_getRelationRequiredChain configuration, relations, (relation) ->
       for column in relation.columns
         columnName = "#{column.table || relation.table}.\"#{column.name}\""
         columnName = column.format.replace('{{column}}', columnName) if column.format
-        columns.push "#{columnName} \"#{column.alias}\""
+
+        if options && options.columns && options.columns.length
+          if column.alias && options.columns.includes(column.alias.replace('this.', ''))
+            columns.push "#{columnName} \"#{column.alias}\""
+        else
+          columns.push "#{columnName} \"#{column.alias}\""
 
     _.uniq(columns).join ', '
 

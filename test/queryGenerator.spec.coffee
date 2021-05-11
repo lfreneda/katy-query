@@ -138,6 +138,86 @@ describe 'Query generator', ->
               accounts."id" "this.employee.account.id",
               accounts."name" "this.employee.account.name"'
 
+    it 'with provided relation which requires previous relation [3]', ->
+      expect(QueryGenerator._toColumnSql(['employee.account', 'employee.account.tags'], config)).to.equal '
+              tasks."id" "this.id",
+              COALESCE(tasks."description",\'(none)\') "this.description",
+              tasks."created_at" "this.createdAt",
+              tasks."employee_id" "this.employee.id",
+              employees."id" "this.employee.id",
+              employees."name" "this.employee.name",
+              employees."hired_at" "this.employee.hiredAt",
+              employees."created_at" "this.employee.createdAt",
+              accounts."id" "this.employee.account.id",
+              accounts."name" "this.employee.account.name",
+              accounts_tags."id" "this.employee.account.tags[].id",
+              accounts_tags."label" "this.employee.account.tags[].label"'
+
+    it 'with provided relation which specified columns [1]', ->
+      options = {
+        columns: ['createdAt', 'employee.id', 'employee.name']
+      }
+      expect(QueryGenerator._toColumnSql(['employee'], config, options)).to.equal '
+              tasks."created_at" "this.createdAt",
+              tasks."employee_id" "this.employee.id",
+              employees."id" "this.employee.id",
+              employees."name" "this.employee.name"'
+
+    it 'with provided relation which specified columns [2]', ->
+      options = {
+        columns: ['id', 'description']
+      }
+      expect(QueryGenerator._toColumnSql([], config, options)).to.equal '
+              tasks."id" "this.id",
+              COALESCE(tasks."description",\'(none)\') "this.description"'
+
+    it 'with provided relation which specified columns [3]', ->
+      options = {
+        columns: ['id', 'description', 'notExist']
+      }
+      expect(QueryGenerator._toColumnSql([], config, options)).to.equal '
+              tasks."id" "this.id",
+              COALESCE(tasks."description",\'(none)\') "this.description"'
+
+    it 'with provided relation which specified columns [4]', ->
+      options = {
+        columns: [
+          'id', 'description',
+          'employee.name', 'employee.hiredAt',
+          'rating.stars', 'rating.comments'
+        ]
+      }
+      expect(QueryGenerator._toColumnSql(['rating', 'employee'], config, options)).to.equal '
+              tasks."id" "this.id",
+              COALESCE(tasks."description",\'(none)\') "this.description",
+              rating."stars" "this.rating.stars",
+              COALESCE(rating."comments",\'(none)\') "this.rating.comments",
+              employees."name" "this.employee.name",
+              employees."hired_at" "this.employee.hiredAt"'
+
+    it 'with provided relation which specified columns is empty, must by ignored', ->
+      options = {
+        columns: []
+      }
+      expect(QueryGenerator._toColumnSql([], config, options)).to.equal 'tasks."id" "this.id",
+              COALESCE(tasks."description",\'(none)\') "this.description",
+              tasks."created_at" "this.createdAt",
+              tasks."employee_id" "this.employee.id"'
+
+    it 'with provided relation which options empty object', ->
+      options = {}
+      expect(QueryGenerator._toColumnSql([], config, options)).to.equal 'tasks."id" "this.id",
+              COALESCE(tasks."description",\'(none)\') "this.description",
+              tasks."created_at" "this.createdAt",
+              tasks."employee_id" "this.employee.id"'
+
+    it 'with provided relation which options empty', ->
+      options = null
+      expect(QueryGenerator._toColumnSql([], config, options)).to.equal 'tasks."id" "this.id",
+              COALESCE(tasks."description",\'(none)\') "this.description",
+              tasks."created_at" "this.createdAt",
+              tasks."employee_id" "this.employee.id"'
+
   describe 'Joins', ->
 
     it 'simple (with no relation)', ->
@@ -768,6 +848,108 @@ describe 'Query generator', ->
             ORDER BY tasks."description" DESC
             OFFSET 15 LIMIT 28;
         '
+
+        params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15', 'Luiz%', '%Vinícius%', 'Katy%', 'Query', 4, 5 ]
+        relations: [ 'employee' ]
+      }
+
+    it 'should generate a complete n executable sql text for the given input, where has specified columns', ->
+
+      result = QueryGenerator.toSql {
+        relations: ['employee']
+        where: {
+          employee_id: [1,3,2]
+          employee_name: 'Luiz Freneda'
+          service_id: null
+          customer_id: [15,'null']
+          created_at: '!null'
+          'created_at>': '2015-05-15'
+          'updated_at<': '2017-05-15'
+          'created_at>=': 'employee.created_at'
+          'employee_name~~*': ['Luiz%', '%Vinícius%']
+          'employee_name!~~*': ['Katy%', 'Query']
+          'employee_id<>': [4,5]
+        },
+        options: {
+          sort: '-description',
+          offset: 15,
+          limit: 28,
+          columns: [
+            'id',
+            'description',
+            'employee.name'
+          ]
+          tenant: {
+            column: 'account_id'
+            value: 1505
+          }
+        }
+      }, config
+
+      expect(result).to.deep.equal {
+
+        sqlCount: '
+            SELECT COUNT(DISTINCT tasks."id")
+            FROM tasks join orders on orders.id = tasks.order_id
+              LEFT JOIN employees ON tasks.employee_id = employees.id
+            WHERE (tasks."account_id" = $1)
+              AND tasks."employee_id" in ($2, $3, $4)
+              AND employees."name" = $5
+              AND tasks."service_id" is null
+              AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+              AND tasks."created_at" is not null
+              AND tasks."created_at" > $7
+              AND tasks."updated_at" < $8
+              AND tasks."created_at" >= employees."created_at"
+              AND employees."name" LIKE ANY(ARRAY[$9, $10])
+              AND employees."name" NOT LIKE ANY(ARRAY[$11, $12])
+              AND tasks."employee_id" NOT IN ($13, $14);
+        '
+
+        sqlSelectIds: '
+            SELECT tasks."id"
+            FROM tasks join orders on orders.id = tasks.order_id
+            LEFT JOIN employees ON tasks.employee_id = employees.id
+            WHERE
+                (tasks."account_id" = $1)
+              AND tasks."employee_id" in ($2, $3, $4)
+              AND employees."name" = $5
+              AND tasks."service_id" is null
+              AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+              AND tasks."created_at" is not null
+              AND tasks."created_at" > $7
+              AND tasks."updated_at" < $8
+              AND tasks."created_at" >= employees."created_at"
+              AND employees."name" LIKE ANY(ARRAY[$9, $10])
+              AND employees."name" NOT LIKE ANY(ARRAY[$11, $12])
+              AND tasks."employee_id" NOT IN ($13, $14)
+            GROUP BY tasks."id"
+            ORDER BY tasks."description" DESC
+            OFFSET 15 LIMIT 28;
+        '
+
+        sqlSelect: '
+            SELECT
+              tasks."id" "this.id",
+              COALESCE(tasks."description",\'(none)\') "this.description",
+              employees."name" "this.employee.name"
+            FROM tasks join orders on orders.id = tasks.order_id
+            LEFT JOIN employees ON tasks.employee_id = employees.id
+            WHERE
+                (tasks."account_id" = $1)
+              AND tasks."employee_id" in ($2, $3, $4)
+              AND employees."name" = $5
+              AND tasks."service_id" is null
+              AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+              AND tasks."created_at" is not null
+              AND tasks."created_at" > $7
+              AND tasks."updated_at" < $8
+              AND tasks."created_at" >= employees."created_at"
+              AND employees."name" LIKE ANY(ARRAY[$9, $10])
+              AND employees."name" NOT LIKE ANY(ARRAY[$11, $12])
+              AND tasks."employee_id" NOT IN ($13, $14)
+            ORDER BY tasks."description" DESC
+            OFFSET 15 LIMIT 28;'
 
         params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15', 'Luiz%', '%Vinícius%', 'Katy%', 'Query', 4, 5 ]
         relations: [ 'employee' ]
