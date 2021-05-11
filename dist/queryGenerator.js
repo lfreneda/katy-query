@@ -54,11 +54,11 @@ return lastIndex !== -1 && lastIndex === position;
 
     QueryGenerator.toSql = function(args, config) {
       var columns, joins, pageOptions, relations, sortOptions, whereResult;
+      args.options = args.options || {};
       whereResult = this._toWhere(args.where, config, args.options);
       relations = _.uniq(whereResult.relations.concat(args.relations || []));
       joins = this._toJoinSql(relations, config);
-      columns = this._toColumnSql(relations, config);
-      args.options = args.options || {};
+      columns = this._toColumnSql(relations, config, args.options);
       pageOptions = this._toOptions({
         limit: args.options.limit,
         offset: args.options.offset
@@ -275,30 +275,46 @@ return lastIndex !== -1 && lastIndex === position;
       return fieldConfiguration;
     };
 
-    QueryGenerator._toColumnSql = function(relations, configuration) {
-      var columns;
+    QueryGenerator._toColumnSql = function(relations, configuration, options) {
+      var column, columnName, columns, i, len, ref;
       if (relations == null) {
         relations = [];
       }
-      columns = configuration.columns.map(function(column) {
-        var columnName;
+      columns = [];
+      ref = configuration.columns;
+      for (i = 0, len = ref.length; i < len; i++) {
+        column = ref[i];
         columnName = (column.table || configuration.table) + ".\"" + column.name + "\"";
         if (column.format) {
           columnName = column.format.replace('{{column}}', columnName);
         }
-        return columnName + " \"" + column.alias + "\"";
-      });
+        if (options && options.columns && options.columns.length) {
+          if (column.alias && options.columns.includes(column.alias.replace('this.', ''))) {
+            columns.push(columnName + " \"" + column.alias + "\"");
+          }
+        } else {
+          columns.push(columnName + " \"" + column.alias + "\"");
+        }
+      }
       this._getRelationRequiredChain(configuration, relations, function(relation) {
-        var column, columnName, i, len, ref, results;
-        ref = relation.columns;
+        var j, len1, ref1, results;
+        ref1 = relation.columns;
         results = [];
-        for (i = 0, len = ref.length; i < len; i++) {
-          column = ref[i];
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          column = ref1[j];
           columnName = (column.table || relation.table) + ".\"" + column.name + "\"";
           if (column.format) {
             columnName = column.format.replace('{{column}}', columnName);
           }
-          results.push(columns.push(columnName + " \"" + column.alias + "\""));
+          if (options && options.columns) {
+            if (column.alias && options.columns.includes(column.alias.replace('this.', ''))) {
+              results.push(columns.push(columnName + " \"" + column.alias + "\""));
+            } else {
+              results.push(void 0);
+            }
+          } else {
+            results.push(columns.push(columnName + " \"" + column.alias + "\""));
+          }
         }
         return results;
       });
