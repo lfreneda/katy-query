@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "chai": "^3.5.0",
-    "gulp": "^3.9.1",
+    "gulp": "^4.0.2",
     "gulp-cached": "^1.1.0",
     "gulp-coffee": "^2.3.2",
     "gulp-env": "^0.4.0",
