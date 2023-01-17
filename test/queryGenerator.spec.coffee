@@ -4,6 +4,7 @@ QueryGenerator = require './../lib/queryGenerator'
 config = {
   table: 'tasks'
   from: 'tasks join orders on orders.id = tasks.order_id'
+  useMainTablePagination: false
   mappers: {
     'task_status_from_name_to_ordinal': (statusName) ->
       return 1 if statusName.trim().toLowerCase() == 'scheduled'
@@ -75,6 +76,82 @@ config = {
       columns: [
         { name: 'id', alias: 'this.employee.account.tags[].id' }
         { name: 'label', alias: 'this.employee.account.tags[].label' }
+      ]
+    }
+  }
+}
+
+configWithMainTablePagination = {
+  table: 'tasks'
+  from: 'tasks join orders on orders.id = tasks.order_id'
+  useMainTablePagination: true
+  mappers: {
+    'task_status_from_name_to_ordinal': (statusName) ->
+      return 1 if statusName.trim().toLowerCase() == 'scheduled'
+      return 2 if statusName.trim().toLowerCase() == 'inprogress'
+      return 3 if statusName.trim().toLowerCase() == 'done'
+  }
+  search: {
+    'employee.created_at': {
+      relation: 'employee'
+      column: 'created_at'
+    }
+    description: {
+      column: 'description'
+    }
+    employee_name: {
+      relation: 'employee'
+      column: 'name'
+    }
+    status: {
+      mapper: 'task_status_from_name_to_ordinal'
+    }
+    hired_at: {
+      relation: 'employee'
+      column: 'hired_at'
+      format: '({{column}} at time zone \'utc\') at time zone \'America/Sao_Paulo\''
+    }
+  }
+
+  columns: [
+    { name: 'id', alias: 'this.id' }
+    { name: 'description', alias: 'this.description', format: 'COALESCE({{column}},\'(none)\')' }
+    { name: 'created_at', alias: 'this.createdAt' }
+    { name: 'employee_id', alias: 'this.employee.id' }
+  ]
+
+  relations: {
+    employee: {
+      table: 'employees'
+      sql: 'LEFT JOIN employees ON tasks.employee_id = employees.id'
+      columns: [
+        { name: 'id', alias: 'this.employee.id' }
+        { name: 'name', alias: 'this.employee.name' }
+        { name: 'hired_at', alias: 'this.employee.hiredAt' }
+        { name: 'created_at', alias: 'this.employee.createdAt' }
+      ]
+    },
+    order: {
+      table: 'orders',
+      sql: 'INNER JOIN orders ON tasks.order_id = orders.id',
+      columns: [
+        { name: 'id', alias: 'this.order.id' },
+        { name: 'number', alias: 'this.order.address.number' },
+        { name: 'complement', alias: 'this.order.address.complement' },
+        { name: 'neighborhood', alias: 'this.order.address.neighborhood' },
+        { name: 'city', alias: 'this.order.address.city' },
+        { name: 'state', alias: 'this.order.address.state' }
+      ]
+    },
+    'order.labels': {
+      table: 'orders_labels',
+      requires: ['order'],
+      sql: 'LEFT JOIN orders_labels ON orders.id = orders_labels.order_id \
+            LEFT JOIN labels ON labels.id = orders_labels.label_id ',
+      columns: [
+        { name: 'id', alias: 'this.order.labels[].id', table: 'labels' },
+        { name: 'name', alias: 'this.order.labels[].name', table: 'labels' },
+        { name: 'color', alias: 'this.order.labels[].color', table: 'labels' }
       ]
     }
   }
@@ -222,7 +299,7 @@ describe 'Query generator', ->
 
     it 'simple (with no relation)', ->
       expect(QueryGenerator._toJoinSql([], config)).to.equal ''
-      
+
     it 'with provided relation', ->
       expect(QueryGenerator._toJoinSql(['employee'], config)).to.equal '
         LEFT JOIN employees ON tasks.employee_id = employees.id
@@ -237,7 +314,7 @@ describe 'Query generator', ->
 
     it 'with provided relation which requires previous relation [2]', ->
       expect(QueryGenerator._toJoinSql(['employee.account'], config)).to.equal '
-        LEFT JOIN employees ON tasks.employee_id = employees.id 
+        LEFT JOIN employees ON tasks.employee_id = employees.id
         LEFT JOIN accounts ON accounts.id = employees.account_id
       '
 
@@ -499,7 +576,7 @@ describe 'Query generator', ->
         expect(QueryGenerator._toWhere({
           'employee_name~~*': ['Luiz%', '%Vinícius%', null]
         }, config)).to.deep.equal {
-          where: '(employees.\"name\" LIKE ANY(ARRAY[$1, $2]) OR employees.\"name\" is null)'
+          where: '(employees."name" LIKE ANY(ARRAY[$1, $2]) OR employees."name" is null)'
           params: [
             'Luiz%',
             '%Vinícius%'
@@ -543,7 +620,7 @@ describe 'Query generator', ->
         expect(QueryGenerator._toWhere({
           'created_at>': 'employee.created_date'
         }, config)).to.deep.equal {
-          where: 'tasks.\"created_at\" > $1'
+          where: 'tasks."created_at" > $1'
           params: [ 'employee.created_date' ]
           relations: []
         }
@@ -799,11 +876,11 @@ describe 'Query generator', ->
         '
 
         sqlSelectIds: '
-            SELECT tasks."id"
+            SELECT
+              tasks."id"
             FROM tasks join orders on orders.id = tasks.order_id
             LEFT JOIN employees ON tasks.employee_id = employees.id
-            WHERE
-                (tasks."account_id" = $1)
+            WHERE (tasks."account_id" = $1)
               AND tasks."employee_id" in ($2, $3, $4)
               AND employees."name" = $5
               AND tasks."service_id" is null
@@ -822,18 +899,17 @@ describe 'Query generator', ->
 
         sqlSelect: '
             SELECT
-                tasks."id" "this.id",
-                COALESCE(tasks."description",\'(none)\') "this.description",
-                tasks."created_at" "this.createdAt",
-                tasks."employee_id" "this.employee.id",
-                employees."id" "this.employee.id",
-                employees."name" "this.employee.name",
-                employees."hired_at" "this.employee.hiredAt",
-                employees."created_at" "this.employee.createdAt"
+              tasks."id" "this.id",
+              COALESCE(tasks."description",\'(none)\') "this.description",
+              tasks."created_at" "this.createdAt",
+              tasks."employee_id" "this.employee.id",
+              employees."id" "this.employee.id",
+              employees."name" "this.employee.name",
+              employees."hired_at" "this.employee.hiredAt",
+              employees."created_at" "this.employee.createdAt"
             FROM tasks join orders on orders.id = tasks.order_id
-              LEFT JOIN employees ON tasks.employee_id = employees.id
-            WHERE
-                (tasks."account_id" = $1)
+            LEFT JOIN employees ON tasks.employee_id = employees.id
+            WHERE (tasks."account_id" = $1)
               AND tasks."employee_id" in ($2, $3, $4)
               AND employees."name" = $5
               AND tasks."service_id" is null
@@ -847,6 +923,114 @@ describe 'Query generator', ->
               AND tasks."employee_id" NOT IN ($13, $14)
             ORDER BY tasks."description" DESC
             OFFSET 15 LIMIT 28;
+        '
+
+        params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15', 'Luiz%', '%Vinícius%', 'Katy%', 'Query', 4, 5 ]
+        relations: [ 'employee' ]
+      }
+
+    it 'should generate a complete main table pagination n executable sql text for the given input', ->
+
+      result = QueryGenerator.toSql {
+        relations: ['employee']
+        where: {
+          employee_id: [1,3,2]
+          employee_name: 'Luiz Freneda'
+          service_id: null
+          customer_id: [15,'null']
+          created_at: '!null'
+          'created_at>': '2015-05-15'
+          'updated_at<': '2017-05-15'
+          'created_at>=': 'employee.created_at'
+          'employee_name~~*': ['Luiz%', '%Vinícius%']
+          'employee_name!~~*': ['Katy%', 'Query']
+          'employee_id<>': [4,5]
+        },
+        options: {
+          sort: '-description',
+          offset: 15,
+          limit: 28,
+          tenant: {
+            column: 'account_id'
+            value: 1505
+          }
+        }
+      }, configWithMainTablePagination
+
+      expect(result).to.deep.equal {
+
+        sqlCount: '
+            SELECT COUNT(DISTINCT tasks."id")
+            FROM tasks join orders on orders.id = tasks.order_id
+              LEFT JOIN employees ON tasks.employee_id = employees.id
+            WHERE (tasks."account_id" = $1)
+              AND tasks."employee_id" in ($2, $3, $4)
+              AND employees."name" = $5
+              AND tasks."service_id" is null
+              AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+              AND tasks."created_at" is not null
+              AND tasks."created_at" > $7
+              AND tasks."updated_at" < $8
+              AND tasks."created_at" >= employees."created_at"
+              AND employees."name" LIKE ANY(ARRAY[$9, $10])
+              AND employees."name" NOT LIKE ANY(ARRAY[$11, $12])
+              AND tasks."employee_id" NOT IN ($13, $14);
+        '
+
+        sqlSelectIds: '
+            SELECT
+              tasks."id"
+            FROM (
+              SELECT tasks.*
+              FROM tasks join orders on orders.id = tasks.order_id
+              OFFSET 15 LIMIT 28
+            ) AS tasks
+            LEFT JOIN employees ON tasks.employee_id = employees.id
+            WHERE (tasks."account_id" = $1)
+              AND tasks."employee_id" in ($2, $3, $4)
+              AND employees."name" = $5
+              AND tasks."service_id" is null
+              AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+              AND tasks."created_at" is not null
+              AND tasks."created_at" > $7
+              AND tasks."updated_at" < $8
+              AND tasks."created_at" >= employees."created_at"
+              AND employees."name" LIKE ANY(ARRAY[$9, $10])
+              AND employees."name" NOT LIKE ANY(ARRAY[$11, $12])
+              AND tasks."employee_id" NOT IN ($13, $14)
+            GROUP BY tasks."id"
+            ORDER BY tasks."description" DESC ;
+        '
+
+        sqlSelect: '
+            SELECT
+              tasks."id" "this.id",
+              COALESCE(tasks."description",\'(none)\') "this.description",
+              tasks."created_at" "this.createdAt",
+              tasks."employee_id" "this.employee.id",
+              employees."id" "this.employee.id",
+              employees."name" "this.employee.name",
+              employees."hired_at" "this.employee.hiredAt",
+              employees."created_at" "this.employee.createdAt"
+            FROM (
+              SELECT tasks.*
+              FROM tasks join orders on orders.id = tasks.order_id
+              OFFSET 15 LIMIT 28
+            ) AS tasks
+              LEFT JOIN employees ON tasks.employee_id = employees.id
+            WHERE (tasks."account_id" = $1)
+              AND tasks."employee_id" in ($2, $3, $4)
+              AND employees."name" = $5
+              AND tasks."service_id" is null
+              AND (tasks."customer_id" in ($6) OR tasks."customer_id" is null)
+              AND tasks."created_at" is not null
+              AND tasks."created_at" > $7
+              AND tasks."updated_at" < $8
+              AND tasks."created_at" >= employees."created_at"
+              AND employees."name" LIKE ANY(ARRAY[$9, $10])
+              AND employees."name" NOT LIKE ANY(ARRAY[$11, $12])
+              AND tasks."employee_id" NOT IN ($13, $14)
+            ORDER BY tasks."description" DESC ;
         '
 
         params: [ 1505, 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15', 'Luiz%', '%Vinícius%', 'Katy%', 'Query', 4, 5 ]
@@ -907,11 +1091,11 @@ describe 'Query generator', ->
         '
 
         sqlSelectIds: '
-            SELECT tasks."id"
+            SELECT
+              tasks."id"
             FROM tasks join orders on orders.id = tasks.order_id
-            LEFT JOIN employees ON tasks.employee_id = employees.id
-            WHERE
-                (tasks."account_id" = $1)
+              LEFT JOIN employees ON tasks.employee_id = employees.id
+            WHERE (tasks."account_id" = $1)
               AND tasks."employee_id" in ($2, $3, $4)
               AND employees."name" = $5
               AND tasks."service_id" is null
