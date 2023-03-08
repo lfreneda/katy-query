@@ -199,7 +199,7 @@ return lastIndex !== -1 && lastIndex === position;
     };
 
     QueryGenerator._whereClauseAsArray = function(field, value, result, configuration) {
-      var arrValue, arrValues, fieldConfig, fieldOperator, i, len, whereResult, withNull;
+      var arrValue, arrValues, columnName, fieldConfig, fieldOperator, i, len, whereResult, withNull;
       arrValues = [];
       fieldOperator = this._getWhereOperator(field);
       field = field.replace(fieldOperator.operator, '');
@@ -214,14 +214,22 @@ return lastIndex !== -1 && lastIndex === position;
       }
       withNull = indexOf.call(value, 'null') >= 0 || indexOf.call(value, null) >= 0;
       whereResult = null;
-      if (fieldOperator.operator === this._operators.iLikeOperator.operator) {
-        whereResult = fieldConfig.table + ".\"" + fieldConfig.column + "\" LIKE ANY(ARRAY[" + (arrValues.join(', ')) + "])";
-      } else if (fieldOperator.operator === this._operators.iNotLikeOperator.operator) {
-        whereResult = fieldConfig.table + ".\"" + fieldConfig.column + "\" NOT LIKE ANY(ARRAY[" + (arrValues.join(', ')) + "])";
-      } else if (fieldOperator.operator === this._operators.notEqualOperator.operator) {
-        whereResult = fieldConfig.table + ".\"" + fieldConfig.column + "\" NOT IN (" + (arrValues.join(', ')) + ")";
+      if (!fieldConfig.format) {
+        whereResult = fieldConfig.table + ".\"" + fieldConfig.column + "\"";
       } else {
-        whereResult = fieldConfig.table + ".\"" + fieldConfig.column + "\" in (" + (arrValues.join(', ')) + ")";
+        if (fieldConfig.format) {
+          columnName = fieldConfig.format.replace('{{column}}', fieldConfig.table + ".\"" + fieldConfig.column + "\"");
+        }
+        whereResult = "" + columnName;
+      }
+      if (fieldOperator.operator === this._operators.iLikeOperator.operator) {
+        whereResult += " LIKE ANY(ARRAY[" + (arrValues.join(', ')) + "])";
+      } else if (fieldOperator.operator === this._operators.iNotLikeOperator.operator) {
+        whereResult += " NOT LIKE ANY(ARRAY[" + (arrValues.join(', ')) + "])";
+      } else if (fieldOperator.operator === this._operators.notEqualOperator.operator) {
+        whereResult += " NOT IN (" + (arrValues.join(', ')) + ")";
+      } else {
+        whereResult += " in (" + (arrValues.join(', ')) + ")";
       }
       if (withNull) {
         whereResult = "(" + whereResult + " OR " + fieldConfig.table + ".\"" + fieldConfig.column + "\" is null)";
@@ -306,7 +314,7 @@ return lastIndex !== -1 && lastIndex === position;
           if (column.format) {
             columnName = column.format.replace('{{column}}', columnName);
           }
-          if (options && options.columns) {
+          if (options && options.columns && options.columns.length) {
             if (column.alias && options.columns.includes(column.alias.replace('this.', ''))) {
               results.push(columns.push(columnName + " \"" + column.alias + "\""));
             } else {

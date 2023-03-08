@@ -163,15 +163,20 @@ class QueryGenerator
     withNull = 'null' in value or null in value
 
     whereResult = null
-    if fieldOperator.operator == @_operators.iLikeOperator.operator
-      whereResult = "#{fieldConfig.table}.\"#{fieldConfig.column}\" LIKE ANY(ARRAY[#{arrValues.join(', ')}])"
-    else if fieldOperator.operator == @_operators.iNotLikeOperator.operator
-      whereResult = "#{fieldConfig.table}.\"#{fieldConfig.column}\" NOT LIKE ANY(ARRAY[#{arrValues.join(', ')}])"
-    else if fieldOperator.operator == @_operators.notEqualOperator.operator
-      whereResult = "#{fieldConfig.table}.\"#{fieldConfig.column}\" NOT IN (#{arrValues.join(', ')})"
+    if !fieldConfig.format
+      whereResult = "#{fieldConfig.table}.\"#{fieldConfig.column}\""
     else
-      whereResult = "#{fieldConfig.table}.\"#{fieldConfig.column}\" in (#{arrValues.join(', ')})"
+      columnName = fieldConfig.format.replace('{{column}}', "#{fieldConfig.table}.\"#{fieldConfig.column}\"") if fieldConfig.format
+      whereResult =  "#{columnName}"
 
+    if fieldOperator.operator == @_operators.iLikeOperator.operator
+      whereResult += " LIKE ANY(ARRAY[#{arrValues.join(', ')}])"
+    else if fieldOperator.operator == @_operators.iNotLikeOperator.operator
+      whereResult += " NOT LIKE ANY(ARRAY[#{arrValues.join(', ')}])"
+    else if fieldOperator.operator == @_operators.notEqualOperator.operator
+      whereResult += " NOT IN (#{arrValues.join(', ')})"
+    else
+      whereResult += " in (#{arrValues.join(', ')})"
     if withNull
       whereResult = "(#{whereResult} OR #{fieldConfig.table}.\"#{fieldConfig.column}\" is null)"
 

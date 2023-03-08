@@ -29,6 +29,11 @@ config = {
       relation: 'employee'
       column: 'hired_at'
       format: '({{column}} at time zone \'utc\') at time zone \'America/Sao_Paulo\''
+    },
+    'info.location.code': {
+      relation: 'info'
+      column: 'json_body'
+      format: '({{column}}->\'location\'->>\'code\''
     }
   }
 
@@ -75,6 +80,14 @@ config = {
       columns: [
         { name: 'id', alias: 'this.employee.account.tags[].id' }
         { name: 'label', alias: 'this.employee.account.tags[].label' }
+      ]
+    },
+    info: {
+      table: 'info'
+      sql: 'LEFT JOIN info ON tasks.info_id = info.id'
+      columns: [
+        { name: 'id', alias: 'this.info.id' }
+        { name: 'json_body', alias: 'this.info.jsonBody' }
       ]
     }
   }
@@ -481,6 +494,15 @@ describe 'Query generator', ->
           where: 'tasks."employee_id" = $1 AND tasks."description" = $2'
           params: [ 1, 'task description here' ]
           relations: []
+        }
+
+      it 'multiple equal format column with mapper configured, result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          'info.location.code': ['0255', '0213']
+        }, config)).to.deep.equal {
+          where: "(info.\"json_body\"->'location'->>'code' in ($1, $2)"
+          params: ['0255', '0213']
+          relations: ['info']
         }
 
       it 'multiples ilike column of an relation condition (when configured), result should be as expected', ->
