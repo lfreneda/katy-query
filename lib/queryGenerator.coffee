@@ -35,8 +35,15 @@ class QueryGenerator
     joins = @_toJoinSql(relations, config)
     columns = @_toColumnSql(relations, config, args.options)
 
+    useMainTablePagination = config.useMainTablePagination || false
     pageOptions = @_toOptions({ limit: args.options.limit, offset: args.options.offset }, config)
     sortOptions = @_toOptions({ sort: args.options.sort }, config)
+
+    fromTable = if useMainTablePagination then "(
+                  SELECT #{config.table}.*
+                  FROM #{config.from || config.table}
+                  #{pageOptions}
+                ) AS #{config.table}" else (config.from || config.table)
 
     return {
 
@@ -44,25 +51,25 @@ class QueryGenerator
                   COUNT(DISTINCT #{config.table}.\"id\")
                 FROM #{config.from || config.table}
                   #{joins}
-                WHERE 
+                WHERE
                 #{whereResult.where};"
 
       sqlSelectIds: "SELECT #{config.table}.\"id\"
-                    FROM #{config.from || config.table}
+                    FROM #{fromTable}
                     #{joins}
-                    WHERE 
-                    #{whereResult.where} 
+                    WHERE
+                    #{whereResult.where}
                     GROUP BY #{config.table}.\"id\"
-                    #{sortOptions} 
-                    #{pageOptions};"
+                    #{sortOptions}
+                    #{if !useMainTablePagination then pageOptions else ''};"
 
       sqlSelect: "SELECT #{columns}
-                  FROM #{config.from || config.table}
+                  FROM #{fromTable}
                   #{joins}
-                  WHERE 
-                  #{whereResult.where} 
-                  #{sortOptions} 
-                  #{pageOptions};"
+                  WHERE
+                  #{whereResult.where}
+                  #{sortOptions}
+                  #{if !useMainTablePagination then pageOptions else ''};"
 
       params: whereResult.params
       relations: relations
