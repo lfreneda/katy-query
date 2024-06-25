@@ -134,7 +134,13 @@ class QueryGenerator
     else
       columnName = fieldConfig.format.replace('{{column}}', columnName) if fieldConfig.format
       result.params.push fieldConfig.mapper(value)
+      if fieldConfig.orWhere and fieldConfig.orWhere.length
+        return result.where.push "(#{columnName} #{fieldOperator.operator} $#{result.params.length}#{@_addOrWhereClause(fieldConfig.orWhere, fieldOperator.operator, result.params.length)})"
       result.where.push "#{columnName} #{fieldOperator.operator} $#{result.params.length}"
+
+  @_addOrWhereClause = (orWhereArray, operator, paramIndex) ->
+    orWhereArray.map (orWhere) ->
+      " or #{orWhere.table}.#{orWhere.column} #{operator} $#{paramIndex}"
 
   @_isSearchField: (config, value) ->
     if config.search[value] then yes else no
@@ -212,6 +218,9 @@ class QueryGenerator
       if searchConfig.relation and config.relations[searchConfig.relation]
         result.relations.push searchConfig.relation if result
         fieldConfiguration.table = config.relations[searchConfig.relation].table
+
+      if searchConfig.orWhere
+        fieldConfiguration.orWhere = searchConfig.orWhere
 
     fieldConfiguration
 

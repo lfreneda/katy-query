@@ -33,6 +33,19 @@ class QuerySearchParser
             property: key
             message: "must match #{config.search[key].pattern}"
           }
+      if config.search and config.search[key] and config.search[key].orWhere
+        if not _.isArray config.search[key].orWhere
+          errors.push {
+            property: key
+            message: "property orWhere must be an array"
+          }
+        else
+          for value in config.search[key].orWhere
+            if not (value.table and value.column)
+              errors.push {
+                property: value
+                message: "invalid orWhere configuration, must have table and column"
+              }
 
     return {
       isValid: _.isEmpty(errors)
