@@ -34,6 +34,16 @@ config = {
       relation: 'info'
       column: 'json_body'
       format: '({{column}}->\'location\'->>\'code\''
+    },
+    employeeId: {
+      column: 'employee_id'
+      pattern: /^\d+$/
+      orWhere: [
+        {
+          table: 'tasks_employees'
+          column: 'employee_id'
+        }
+      ]
     }
   }
 
@@ -324,6 +334,15 @@ describe 'Query generator', ->
         }, config)).to.deep.equal {
           where: 'tasks."status" = $1'
           params: [3]
+          relations: []
+        }
+
+      it 'single equal condition with orWhere configured, result should be as expected', ->
+        expect(QueryGenerator._toWhere({
+          employeeId: '1'
+        }, config)).to.deep.equal {
+          where: '(tasks.\"employee_id\" = $1 or tasks_employees.employee_id = $1)'
+          params: ['1']
           relations: []
         }
 
@@ -731,6 +750,8 @@ describe 'Query generator', ->
           params: [ 1, 3, 2, 'Luiz Freneda', 15, '2015-05-15', '2017-05-15' ]
           relations: [ 'employee' ]
         }
+
+  describe 'orWhere', ->
 
   describe 'Options', ->
 

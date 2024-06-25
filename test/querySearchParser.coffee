@@ -4,6 +4,7 @@ QuerySearchParser = require './../lib/querySearchParser'
 describe 'Query Search Parser', ->
 
   config = null
+  invalidConfig = null
   beforeEach ->
     config = {
       table: 'tasks'
@@ -32,6 +33,59 @@ describe 'Query Search Parser', ->
           pattern: /^\d{4}-\d{2}-\d{2}$/
         },
         'description~~*': {
+        },
+        employeeId: {
+          column: 'employee_id'
+          pattern: /^\d+$/
+          orWhere: [
+            {
+              table: 'tasks_employees'
+              column: 'employee_id'
+            }
+          ]
+        }
+      }
+      columns: [
+        { name: 'id', alias: 'this.id' }
+        { name: 'description', alias: 'this.description' }
+        { name: 'created_at', alias: 'this.createdAt' }
+        { name: 'employee_id', alias: 'this.employee.id' }
+      ]
+      relations: {
+        employee: {
+          table: 'employees'
+          sql: 'LEFT JOIN employees ON tasks.employee_id = employees.id'
+          columns: [
+            { name: 'id', alias: 'this.employee.id' }
+            { name: 'name', alias: 'this.employee.name' }
+          ]
+        }
+      }
+    }
+    invalidConfig = {
+      table: 'tasks'
+      search: {
+        employee: {
+          column: 'employee_id'
+          pattern: /^\d+$/
+          orWhere: 'ddasd'
+        },
+        scheduledDate: {
+          column: 'date'
+          pattern: /^\d{4}-\d{2}-\d{2}$/
+          orWhere: [
+            {
+              table: 'tasks'
+            }
+          ]
+        },
+        scheduledTime: {
+          column: 'date'
+          orWhere: [
+            {
+              column: 'tasks'
+            }
+          ]
         }
       }
       columns: [
@@ -144,5 +198,43 @@ describe 'Query Search Parser', ->
 
     it 'given invalid object with no config', ->
       validateResult = QuerySearchParser.validate { scheduledDate: 'Invalid date' }, {}
+      expect(validateResult.isValid).to.equal true
+      expect(validateResult.errors).to.deep.equal []
+
+    it 'given invalid orWhere configuration should return a erro validation [1]', ->
+      validateResult = QuerySearchParser.validate { employee: '1' }, invalidConfig
+      expect(validateResult.isValid).to.equal false
+      expect(validateResult.errors).to.deep.equal [
+        {
+          message: 'property orWhere must be an array'
+          property: 'employee'
+        }
+      ]
+    it 'given invalid orWhere configuration should return a erro validation [2]', ->
+      validateResult = QuerySearchParser.validate { scheduledDate: '1999-01-01' }, invalidConfig
+      expect(validateResult.isValid).to.equal false
+      expect(validateResult.errors).to.deep.equal [
+        {
+          message: 'invalid orWhere configuration, must have table and column'
+          property: {
+            table: 'tasks'
+          }
+        }
+      ]
+
+    it 'given invalid orWhere configuration should return a erro validation [3]', ->
+      validateResult = QuerySearchParser.validate { scheduledTime: '1999-01-01' }, invalidConfig
+      expect(validateResult.isValid).to.equal false
+      expect(validateResult.errors).to.deep.equal [
+        {
+          message: 'invalid orWhere configuration, must have table and column'
+          property: {
+            column: 'tasks'
+          }
+        }
+      ]
+
+    it 'given a valid orWhere configuration should return non error validation', ->
+      validateResult = QuerySearchParser.validate { employeeId: '1' }, config
       expect(validateResult.isValid).to.equal true
       expect(validateResult.errors).to.deep.equal []
