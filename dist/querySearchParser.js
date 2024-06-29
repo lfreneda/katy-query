@@ -59,7 +59,7 @@
     };
 
     QuerySearchParser.validate = function(whereObject, config) {
-      var errors, key;
+      var errors, i, key, len, ref, value;
       errors = [];
       for (key in whereObject) {
         if (config.search && config.search[key] && config.search[key].pattern) {
@@ -68,6 +68,25 @@
               property: key,
               message: "must match " + config.search[key].pattern
             });
+          }
+        }
+        if (config.search && config.search[key] && config.search[key].orWhere) {
+          if (!_.isArray(config.search[key].orWhere)) {
+            errors.push({
+              property: key,
+              message: "property orWhere must be an array"
+            });
+          } else {
+            ref = config.search[key].orWhere;
+            for (i = 0, len = ref.length; i < len; i++) {
+              value = ref[i];
+              if (!(value.table && value.column)) {
+                errors.push({
+                  property: value,
+                  message: "invalid orWhere configuration, must have table and column"
+                });
+              }
+            }
           }
         }
       }

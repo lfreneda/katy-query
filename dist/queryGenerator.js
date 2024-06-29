@@ -161,8 +161,17 @@ return lastIndex !== -1 && lastIndex === position;
           columnName = fieldConfig.format.replace('{{column}}', columnName);
         }
         result.params.push(fieldConfig.mapper(value));
+        if (fieldConfig.orWhere && fieldConfig.orWhere.length) {
+          return result.where.push("(" + columnName + " " + fieldOperator.operator + " $" + result.params.length + (this._addOrWhereClause(fieldConfig.orWhere, fieldOperator.operator, result.params.length)) + ")");
+        }
         return result.where.push(columnName + " " + fieldOperator.operator + " $" + result.params.length);
       }
+    };
+
+    QueryGenerator._addOrWhereClause = function(orWhereArray, operator, paramIndex) {
+      return orWhereArray.map(function(orWhere) {
+        return " or " + orWhere.table + "." + orWhere.column + " " + operator + " $" + paramIndex;
+      });
     };
 
     QueryGenerator._isSearchField = function(config, value) {
@@ -278,6 +287,9 @@ return lastIndex !== -1 && lastIndex === position;
             result.relations.push(searchConfig.relation);
           }
           fieldConfiguration.table = config.relations[searchConfig.relation].table;
+        }
+        if (searchConfig.orWhere) {
+          fieldConfiguration.orWhere = searchConfig.orWhere;
         }
       }
       return fieldConfiguration;
