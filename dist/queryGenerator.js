@@ -53,12 +53,13 @@ return lastIndex !== -1 && lastIndex === position;
     };
 
     QueryGenerator.toSql = function(args, config) {
-      var columns, joins, pageOptions, relations, sortOptions, whereResult;
+      var columns, fromTable, joins, pageOptions, relations, sortOptions, useMainTablePagination, whereResult;
       args.options = args.options || {};
       whereResult = this._toWhere(args.where, config, args.options);
       relations = _.uniq(whereResult.relations.concat(args.relations || []));
       joins = this._toJoinSql(relations, config);
       columns = this._toColumnSql(relations, config, args.options);
+      useMainTablePagination = config.useMainTablePagination || false;
       pageOptions = this._toOptions({
         limit: args.options.limit,
         offset: args.options.offset
@@ -66,10 +67,11 @@ return lastIndex !== -1 && lastIndex === position;
       sortOptions = this._toOptions({
         sort: args.options.sort
       }, config);
+      fromTable = useMainTablePagination ? "( SELECT " + config.table + ".* FROM " + (config.from || config.table) + " " + pageOptions + " ) AS " + config.table : config.from || config.table;
       return {
         sqlCount: "SELECT COUNT(DISTINCT " + config.table + ".\"id\") FROM " + (config.from || config.table) + " " + joins + " WHERE " + whereResult.where + ";",
-        sqlSelectIds: "SELECT " + config.table + ".\"id\" FROM " + (config.from || config.table) + " " + joins + " WHERE " + whereResult.where + " GROUP BY " + config.table + ".\"id\" " + sortOptions + " " + pageOptions + ";",
-        sqlSelect: "SELECT " + columns + " FROM " + (config.from || config.table) + " " + joins + " WHERE " + whereResult.where + " " + sortOptions + " " + pageOptions + ";",
+        sqlSelectIds: "SELECT " + config.table + ".\"id\" FROM " + fromTable + " " + joins + " WHERE " + whereResult.where + " GROUP BY " + config.table + ".\"id\" " + sortOptions + " " + (!useMainTablePagination ? pageOptions : '') + ";",
+        sqlSelect: "SELECT " + columns + " FROM " + fromTable + " " + joins + " WHERE " + whereResult.where + " " + sortOptions + " " + (!useMainTablePagination ? pageOptions : '') + ";",
         params: whereResult.params,
         relations: relations
       };
